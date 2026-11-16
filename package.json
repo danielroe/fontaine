@@ -35,7 +35,7 @@
     "eslint": "10.15.0",
     "installed-check": "11.0.0",
     "knip": "6.45.1",
-    "lint-staged": "17.6.0",
+    "lint-staged": "17.6.1",
     "pkg-pr-new": "0.0.93",
     "simple-git-hooks": "2.14.0",
     "typescript": "6.0.3"
