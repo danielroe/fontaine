@@ -84,7 +84,7 @@ export function normalizeFontData(context: NormalizeFontDataContext, faces: RawF
     const text = glyphs ?? (requested ? unicodeRangeToText(unicodeRange) : undefined)
     const variationAxes = text ? requested?.axes : undefined
     const src = toArray(face.src).map((src) => {
-      const source = typeof src === 'string' ? parseFont(src) : src
+      const source = typeof src === 'string' ? parseFont(src) : { ...src }
       if ('url' in source && isFetchableURL(source.url, true)) {
         source.url = source.url.replace(/^\/\//, 'https://')
         const { pathname } = new URL(source.url)
