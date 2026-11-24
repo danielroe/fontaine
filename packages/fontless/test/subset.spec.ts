@@ -1,3 +1,4 @@
+import type { Storage } from 'unstorage'
 import type { InlineConfig } from 'vite'
 import type { FontlessOptions } from '../src/types'
 import { Buffer } from 'node:buffer'
@@ -6,10 +7,12 @@ import { createServer as createHttpServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { createStorage } from 'unstorage'
+import memoryDriver from 'unstorage/drivers/memory'
 import { build, createServer } from 'vite'
 import { afterAll, describe, expect, it } from 'vitest'
 import { fontless } from '../src'
-import { mergeUnicodeRanges, normalizeGlyphs, subsetFontData } from '../src/subset'
+import { getSubsetterVersion, mergeUnicodeRanges, normalizeGlyphs, subsetFontData } from '../src/subset'
 
 const fixture = fileURLToPath(new URL('fixtures/font.woff2', import.meta.url))
 const scratchDirs: string[] = []
@@ -49,6 +52,10 @@ async function buildApp(root: string, options: FontlessOptions, config: InlineCo
   const files = await Array.fromAsync(fsp.glob('**/*.woff2', { cwd: outDir }))
   const fonts = await Promise.all(files.sort().map(file => fsp.readFile(join(outDir, file))))
   return { files, fonts }
+}
+
+async function subsetKeys(cache: Storage) {
+  return (await cache.getKeys()).filter(key => key.startsWith('data:subsets:'))
 }
 
 async function serveFont(root: string, options: FontlessOptions) {
@@ -128,11 +135,26 @@ describe('mergeUnicodeRanges', () => {
   })
 })
 
+describe('getSubsetterVersion', () => {
+  it('should include the versions of every package that produces subsetted bytes', () => {
+    expect(getSubsetterVersion()).toMatch(/^fontless@\S+ subset-font@\S+ harfbuzzjs@\S+$/)
+  })
+})
+
 describe('subsetFontData', () => {
   it('should fall back to the original font when subsetting fails', async () => {
     const font = Buffer.from('not-really-a-font')
 
-    expect(await subsetFontData(font, 'Hand', 'https://example.com/font.woff2')).toBe(font)
+    const result = await subsetFontData(font, 'Hand', 'https://example.com/font.woff2')
+
+    expect(result.data).toBe(font)
+    expect(result.fallback).toBe(true)
+  })
+
+  it('should not report a fallback when the font is subsetted', async () => {
+    const result = await subsetFontData(await fsp.readFile(fixture), 'Hand', fixture)
+
+    expect(result.fallback).toBe(false)
   })
 })
 
@@ -152,7 +174,7 @@ describe('glyph subsetting', () => {
     expect(font.length).toBeLessThan((await fsp.readFile(fixture)).length)
     expect(font.subarray(0, 4).toString()).toBe('wOF2')
     // a font harfbuzz can subset again is a font harfbuzz could parse
-    expect((await subsetFontData(font, 'Hand', fixture)).length).toBeGreaterThan(0)
+    expect((await subsetFontData(font, 'Hand', fixture)).data.length).toBeGreaterThan(0)
   })
 
   it('should accept glyphs as a list of characters, and as a default for every family', { timeout: 20_000 }, async () => {
@@ -215,6 +237,65 @@ describe('glyph subsetting', () => {
     finally {
       host.close()
     }
+  })
+
+  it('should reuse the cached subset of a local font', { timeout: 20_000 }, async () => {
+    const root = await createFixture(`body { font-family: 'Inter' }`)
+    const cache = createStorage({ driver: memoryDriver() })
+    await buildApp(root, { cache, families: [manualFamily('Inter', 'Hand')] })
+    const keys = await subsetKeys(cache)
+    await cache.setItemRaw(keys[0]!, Buffer.from('cached'))
+    const { fonts } = await buildApp(root, { cache, families: [manualFamily('Inter', 'Hand')] })
+
+    expect(keys).toHaveLength(1)
+    expect(fonts[0]).toEqual(Buffer.from('cached'))
+  })
+
+  it('should subset a local font again when its contents change', { timeout: 20_000 }, async () => {
+    const root = await createFixture(`body { font-family: 'Inter' }`)
+    const source = join(root, 'font.woff2')
+    const family = () => ({ name: 'Inter', src: [{ url: pathToFileURL(source).href, format: 'woff2' }], glyphs: 'Hand' })
+    const cache = createStorage({ driver: memoryDriver() })
+    const first = await buildApp(root, { cache, families: [family()] })
+    for (const key of await subsetKeys(cache)) {
+      await cache.setItemRaw(key, Buffer.from('cached'))
+    }
+    await fsp.writeFile(source, first.fonts[0]!)
+    const { fonts } = await buildApp(root, { cache, families: [family()] })
+
+    expect(fonts[0]!.subarray(0, 4).toString()).toBe('wOF2')
+    expect(await subsetKeys(cache)).toHaveLength(2)
+  })
+
+  it('should subset a local font again when its glyphs change', { timeout: 20_000 }, async () => {
+    const root = await createFixture(`body { font-family: 'Inter' }`)
+    const cache = createStorage({ driver: memoryDriver() })
+    await buildApp(root, { cache, families: [manualFamily('Inter', 'Hand')] })
+    for (const key of await subsetKeys(cache)) {
+      await cache.setItemRaw(key, Buffer.from('cached'))
+    }
+    const { fonts } = await buildApp(root, { cache, families: [manualFamily('Inter', 'Handgloves')] })
+
+    expect(fonts[0]!.subarray(0, 4).toString()).toBe('wOF2')
+    expect(await subsetKeys(cache)).toHaveLength(2)
+  })
+
+  it('should not cache a local font that could not be subsetted', { timeout: 20_000 }, async () => {
+    const root = await createFixture(`body { font-family: 'Inter' }`)
+    const source = join(root, 'broken.woff2')
+    await fsp.writeFile(source, 'not-really-a-font')
+    const cache = createStorage({ driver: memoryDriver() })
+    await buildApp(root, { cache, families: [{ name: 'Inter', src: [{ url: pathToFileURL(source).href, format: 'woff2' }], glyphs: 'Hand' }] })
+
+    expect(await subsetKeys(cache)).toEqual([])
+  })
+
+  it('should subset local fonts with the cache disabled', { timeout: 20_000 }, async () => {
+    const root = await createFixture(`body { font-family: 'Inter' }`)
+    const { fonts } = await buildApp(root, { cache: false, families: [manualFamily('Inter', 'Hand')] })
+
+    expect(fonts[0]!.length).toBeLessThan((await fsp.readFile(fixture)).length)
+    expect((await fsp.readdir(root)).sort()).toEqual(['font.woff2', 'index.html', 'style.css'])
   })
 
   it('should serve subsetted bytes from the dev middleware', { timeout: 20_000 }, async () => {

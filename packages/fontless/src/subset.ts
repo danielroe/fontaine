@@ -1,5 +1,9 @@
 import type { Buffer } from 'node:buffer'
 import type { ResolvedVariableAxisOptions, VariableAxisOptions } from './types'
+import { existsSync, realpathSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { join } from 'node:path'
+import { version } from '../package.json'
 import { logger } from './logger'
 
 /** A `unicode-range` entry: a codepoint, an inclusive range, or up to six wildcard positions. */
@@ -242,6 +246,34 @@ function loadSubsetter(): Promise<Subsetter> {
 }
 
 /**
+ * The versions of `fontless`, `subset-font` and the harfbuzz build it loads, which together
+ * determine the bytes a subset is made of. `undefined` if they cannot be resolved.
+ */
+export function getSubsetterVersion(): string | undefined {
+  try {
+    const subsetFont = findManifest(import.meta.url, 'subset-font')
+    const harfbuzz = findManifest(subsetFont, 'harfbuzzjs')
+    const require = createRequire(import.meta.url)
+    return `fontless@${version} subset-font@${require(subsetFont).version} harfbuzzjs@${require(harfbuzz).version}`
+  }
+  catch {
+    return undefined
+  }
+}
+
+/** The `package.json` of `name` as resolved from `from`, found without consulting its `exports`. */
+function findManifest(from: string, name: string): string {
+  const manifests = createRequire(from).resolve.paths(name)!.map(dir => join(dir, name, 'package.json'))
+  return realpathSync(manifests.find(manifest => existsSync(manifest))!)
+}
+
+export interface SubsetFontResult {
+  data: Buffer
+  /** Whether harfbuzz could not apply everything requested, so some or all of the font is unchanged. */
+  fallback: boolean
+}
+
+/**
  * Reduce `font` to the glyphs needed to render `text`, keeping its original format, and
  * apply `variationAxes` to its variation space.
  *
@@ -249,12 +281,12 @@ function loadSubsetter(): Promise<Subsetter> {
  * silently be given a full font. Fonts harfbuzz cannot process are passed through with a
  * warning instead, as not every format can be subsetted.
  */
-export async function subsetFontData(font: Buffer, text: string, url: string, variationAxes?: VariationAxes): Promise<Buffer> {
+export async function subsetFontData(font: Buffer, text: string, url: string, variationAxes?: VariationAxes): Promise<SubsetFontResult> {
   const subsetFont = await loadSubsetter()
   const axes = variationAxes && Object.keys(variationAxes).length > 0 ? variationAxes : undefined
   if (axes) {
     try {
-      return await subsetFont(font, text, { variationAxes: axes })
+      return { data: await subsetFont(font, text, { variationAxes: axes }), fallback: false }
     }
     catch (error) {
       // An axis the font does not have fails the whole subset, glyphs included.
@@ -262,10 +294,10 @@ export async function subsetFontData(font: Buffer, text: string, url: string, va
     }
   }
   try {
-    return await subsetFont(font, text)
+    return { data: await subsetFont(font, text), fallback: !!axes }
   }
   catch (error) {
     logger.warn(`Could not subset font \`${url}\`. Falling back to the original font file.`, error)
-    return font
+    return { data: font, fallback: true }
   }
 }

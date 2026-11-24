@@ -216,7 +216,7 @@ export interface FontlessOptions {
     [key: string]: ProviderOption | undefined
   }
   /**
-   * Configure how font metadata and downloaded font files are cached between builds.
+   * Configure how font metadata, downloaded font files and subsetted local fonts are cached between builds.
    *
    * - a string or `{ dir }`: cache to this directory (relative paths are resolved from the Vite root)
    * - a storage instance (such as `unstorage`): cache with your own driver

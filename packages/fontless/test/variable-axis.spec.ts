@@ -210,15 +210,21 @@ describe('subsetFontData with variation axes', () => {
     const pinned = await subsetFontData(font, 'Hand', fixture, { CASL: 1 })
     const narrowed = await subsetFontData(font, 'Hand', fixture, { MONO: { min: 0, max: 1 } })
 
-    expect(subset).not.toEqual(font)
-    expect(pinned).toEqual(subset)
-    expect(narrowed).toEqual(subset)
+    expect(subset.data).not.toEqual(font)
+    expect(pinned.data).toEqual(subset.data)
+    expect(narrowed.data).toEqual(subset.data)
+  })
+
+  it('should report a fallback when the axes cannot be applied', async () => {
+    const font = await fsp.readFile(fixture)
+
+    expect((await subsetFontData(font, 'Hand', fixture, { CASL: 1 })).fallback).toBe(true)
   })
 
   it('should subset as usual when no axes are requested', async () => {
     const font = Buffer.from(await fsp.readFile(fixture))
 
-    expect(await subsetFontData(font, 'Hand', fixture, {})).not.toEqual(font)
+    expect((await subsetFontData(font, 'Hand', fixture, {})).data).not.toEqual(font)
   })
 })
 
