@@ -111,6 +111,7 @@ describe('generateFontFace', () => {
     const { bold, ...fallbackMetrics } = (await getMetricsForFamily('Arial'))!
     const face = generateFontFace(metrics!, { name: 'example fallback', font: 'sans-serif', metrics: fallbackMetrics, bold: true })
     expect(face).toContain('  src: local("Arial Bold"), local("Arial-Bold"), local("Arimo Bold"), local("Arimo-Bold"),')
+    expect(face).not.toContain('ArialMT')
     expect(face).toContain('  size-adjust: 112.1577%;')
   })
 })

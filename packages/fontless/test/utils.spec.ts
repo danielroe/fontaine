@@ -367,15 +367,17 @@ describe('variable font fallbacks', () => {
   })
 
   it('should measure faces that declare different axis ranges separately', async () => {
-    const condensed = { src: [{ url: '/archivo-condensed.woff2', format: 'woff2' }], weight: [100, 900] as [number, number], stretch: '62% 100%' }
-    const readVariationWidths = vi.fn(async (source: string) => [1, source === '/archivo-latin.woff2' ? 1.5 : 2])
+    const condensed = { ...latinExt, src: [{ url: '/archivo-condensed.woff2', format: 'woff2' }], stretch: '62% 100%' }
+    const light = { ...latinExt, src: [{ url: '/archivo-light.woff2', format: 'woff2' }], weight: [100, 800] as [number, number] }
+    const widths: Record<string, number> = { '/archivo-latin.woff2': 1.5, '/archivo-condensed.woff2': 2, '/archivo-light.woff2': 2.5 }
+    const readVariationWidths = vi.fn(async (source: string) => [1, widths[source]!])
     const result = await transform(code, {
       readVariationWidths,
-      resolveFontFace: () => ({ fonts: [condensed, latin], fallbacks: ['Arial'], fallbackInstances: [{ weight: 800 }] }),
+      resolveFontFace: () => ({ fonts: [condensed, light, latin], fallbacks: ['Arial'], fallbackInstances: [{ weight: 800 }] }),
     })
 
-    expect(new Set(readVariationWidths.mock.calls.map(([source]) => source))).toEqual(new Set(['/archivo-latin.woff2', '/archivo-condensed.woff2']))
-    expect(fallbackFaces(result)).toHaveLength(3)
+    expect(new Set(readVariationWidths.mock.calls.map(([source]) => source))).toEqual(new Set(Object.keys(widths)))
+    expect(fallbackFaces(result)).toHaveLength(4)
   })
 })
 

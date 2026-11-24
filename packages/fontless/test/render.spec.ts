@@ -243,7 +243,7 @@ describe('variable font fallbacks', () => {
 
   it('should measure the requested instances that a face covers from its font file', async () => {
     const css = await generateFontFallbacks('Archivo', { src: [{ url: variableFont }], weight: '100 900', stretch: '62% 125%' }, arial, {
-      instances: [{ weight: 700 }, { weight: 800 }, { weight: 700, stretch: '125%' }, { weight: 300 }, { stretch: '75%' }, { weight: 950 }, { stretch: '150%' }, {}],
+      instances: [{ weight: 700 }, { weight: 800 }, { weight: 700, stretch: '125%' }, { weight: 600 }, { weight: 300 }, { stretch: '75%' }, { weight: 950 }, { stretch: '150%' }, {}],
     })
 
     expect(describeFaces(css)).toEqual([
@@ -251,6 +251,7 @@ describe('variable font fallbacks', () => {
       'local("Arial Bold") 98.3373% 700',
       'local("Arial Bold") 103.7208% 800',
       'local("Arial Bold") 125.8173% 700 125%',
+      'local("Arial Bold") 95.2736% 600',
       'local("Arial") 96.8729% 300',
       'local("Arial") 78.0034% 75%',
     ])
@@ -283,10 +284,10 @@ describe('variable font fallbacks', () => {
 
   it('should not use the bold face of a fallback without bold metrics', async () => {
     const css = await generateFontFallbacks('Archivo', { src: [{ url: variableFont }], weight: [100, 900] }, [
-      { name: 'Archivo Fallback: Some Unknown Font', font: 'Some Unknown Font' },
-    ], { instances: [{ weight: 700 }, { weight: 300 }] })
+      { name: 'Archivo Fallback: Noto Color Emoji', font: 'Noto Color Emoji' },
+    ], { instances: [{ weight: 700 }, { weight: 600 }, { weight: 500 }, { weight: 300 }] })
 
-    expect(describeFaces(css)).toEqual(['local("Some Unknown Font") 100%', 'local("Some Unknown Font") 100% 300'])
+    expect(describeFaces(css)).toEqual(['local("Noto Color Emoji") 100%', 'local("Noto Color Emoji") 100% 500', 'local("Noto Color Emoji") 100% 300'])
   })
 
   it('should skip instances whose font file cannot be measured', async () => {
