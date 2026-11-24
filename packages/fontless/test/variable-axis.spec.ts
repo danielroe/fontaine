@@ -97,6 +97,12 @@ describe('unicodeRangeToText', () => {
     expect(unicodeRangeToText(['U+002?'])).toBe(' !"#$%&\'()*+,-./')
   })
 
+  it('should expand entries given as one comma-separated value', () => {
+    expect(unicodeRangeToText(['U+0041-0043, U+0061'])).toBe('ABCa')
+    expect(unicodeRangeToText(['U+0041,U+0061', 'U+0062'])).toBe('Aab')
+    expect(unicodeRangeToText(['U+0041,'])).toBeUndefined()
+  })
+
   it('should return nothing for a range too large to expand', () => {
     expect(unicodeRangeToText(['U+0-10FFFF'])).toBeUndefined()
     expect(unicodeRangeToText(['U+0041-0043', 'U+0-10FFFF'])).toBeUndefined()
@@ -170,6 +176,15 @@ describe('variable axis instancing', () => {
 
     expect(emitted[1].subset).toBe('AB')
     expect(emitted[1].variationAxes).toEqual({ CASL: 1 })
+  })
+
+  it('should derive the glyphs to subset to from a comma-separated unicode range', () => {
+    const { emitted } = renderFace({ unicodeRange: ['U+0041-0042, U+0061'] }, {
+      variableAxis: { wdth: { values: [['100', '125']], appliedAs: 'none' } },
+    })
+
+    expect(emitted[1].subset).toBe('ABa')
+    expect(emitted[1].variationAxes).toEqual({ wdth: { min: 100, max: 125 } })
   })
 
   it('should leave the font and CSS alone when there are no glyphs to subset to', () => {

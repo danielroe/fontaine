@@ -159,7 +159,7 @@ export function unicodeRangeToText(unicodeRange?: string[], maxCodepoints: numbe
   }
   let text = ''
   let count = 0
-  for (const entry of unicodeRange) {
+  for (const entry of unicodeRange.flatMap(value => value.split(','))) {
     const range = parseUnicodeRangeEntry(entry)
     if (!range) {
       return undefined
