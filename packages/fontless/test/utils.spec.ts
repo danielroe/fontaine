@@ -62,6 +62,62 @@ describe('transformCSS', () => {
     expect(result).not.toContain(`font-family: 'Poppins';`)
   })
 
+  it('should leave a non-global family alone when its `@font-face` is in scope', async () => {
+    const code = `@font-face { font-family: 'Inter'; src: local("Inter") }\n:root { font-family: 'Inter' }`
+
+    expect(await transform(code, {
+      globalFamilies: new Set(['Poppins']),
+      resolveFontFace: () => ({ fonts: [font], fallbacks: ['Arial'] }),
+    })).toBe(code)
+  })
+
+  it('should emit only fallbacks for a global family, even when its `@font-face` is in scope', async () => {
+    const fontsToPreload = new Map<string, Set<string>>()
+    const result = await transform([
+      `@font-face { font-family: 'Geist Mono'; src: local("Geist Mono") }`,
+      `:root { --font-mono: 'Geist Mono', monospace }`,
+    ].join('\n'), {
+      processCSSVariables: true,
+      globalFamilies: new Set(['Geist Mono']),
+      fontsToPreload,
+      selectFontsToPreload: (_family, fonts) => fonts,
+      resolveFontFace: () => ({
+        fonts: [{ src: [{ url: '/geist-mono.woff2', format: 'woff2' }] }],
+        fallbacks: ['Courier New'],
+      }),
+    })
+
+    expect(result).toContain(`font-family: "Geist Mono Fallback: Courier New"`)
+    expect(result).toContain(`--font-mono: 'Geist Mono', "Geist Mono Fallback: Courier New", monospace`)
+    expect(result.match(/font-family:\s*'Geist Mono';/g)).toHaveLength(1)
+    expect(fontsToPreload.size).toBe(0)
+  })
+
+  it('should not add fallbacks again to a usage site it has already rewritten', async () => {
+    const options: Partial<FontFamilyInjectionPluginOptions> = {
+      globalFamilies: new Set(['Poppins']),
+      resolveFontFace: () => ({ fonts: [font], fallbacks: ['Arial'] }),
+    }
+    const once = await transform(`@font-face { font-family: 'Poppins'; src: local("Poppins") }\n:root { font-family: 'Poppins' }`, options)
+
+    expect(await transform(once, options)).toBe(once)
+
+    const minified = `@font-face{font-family:Poppins;src:local(Poppins)}:root{font-family:Poppins,Poppins Fallback\\: Arial}`
+    expect(await transform(minified, options)).toBe(minified)
+  })
+
+  it('should not emit a fallback `@font-face` again when it is already in scope', async () => {
+    const options: Partial<FontFamilyInjectionPluginOptions> = {
+      processCSSVariables: true,
+      globalFamilies: new Set(['Poppins']),
+      resolveFontFace: () => ({ fonts: [font], fallbacks: ['Arial'] }),
+    }
+    const once = await transform(`@layer base;\n:root { font-family: 'Poppins' }`, options)
+
+    expect(await transform(`${once}\n:root { --font-sans: 'Poppins' }`, options))
+      .toBe(`${once}\n:root { --font-sans: 'Poppins', "Poppins Fallback: Arial" }`)
+  })
+
   it('should emit the primary `@font-face` alongside fallbacks by default', async () => {
     const result = await transform(`:root { font-family: 'Poppins' }`, {
       resolveFontFace: () => ({
