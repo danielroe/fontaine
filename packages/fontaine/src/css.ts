@@ -210,6 +210,12 @@ interface FallbackOptions {
   metrics?: FontFaceMetrics
 
   /**
+   * Use the bold face of the fallback font, sized with `metrics.bold` where it is set.
+   * @optional
+   */
+  bold?: boolean
+
+  /**
    * Additional properties that may be included dynamically
    */
   [key: string]: any
@@ -220,6 +226,8 @@ export type FontFaceMetrics = Pick<
   'ascent' | 'descent' | 'lineGap' | 'unitsPerEm' | 'xWidthAvg'
 > & Partial<Pick<Font, 'fullName' | 'postscriptName'>> & {
   category?: string
+  /** The bold face of the family. */
+  bold?: Pick<Font, 'xWidthAvg'> & Partial<Pick<Font, 'fullName' | 'postscriptName'>>
 }
 
 /**
@@ -229,14 +237,14 @@ export type FontFaceMetrics = Pick<
  * @returns {string} - The full `@font-face` CSS declaration.
  */
 export function generateFontFace(metrics: FontFaceMetrics, fallback: FallbackOptions) {
-  const { name: fallbackName, font: fallbackFontName, metrics: fallbackMetrics, ...properties } = fallback
+  const { name: fallbackName, font: fallbackFontName, metrics: fallbackMetrics, bold, ...properties } = fallback
 
   // Credits to: https://github.com/seek-oss/capsize/blob/master/packages/core/src/createFontStack.ts
 
   // Calculate size adjust
   const preferredFontXAvgRatio = metrics.xWidthAvg / metrics.unitsPerEm
   const fallbackFontXAvgRatio = fallbackMetrics
-    ? fallbackMetrics.xWidthAvg / fallbackMetrics.unitsPerEm
+    ? ((bold && fallbackMetrics.bold) || fallbackMetrics).xWidthAvg / fallbackMetrics.unitsPerEm
     : 1
 
   // Emoji glyphs fill the em box, so matching x-width would shrink them.
@@ -253,7 +261,7 @@ export function generateFontFace(metrics: FontFaceMetrics, fallback: FallbackOpt
 
   const declaration = {
     'font-family': JSON.stringify(fallbackName),
-    'src': renderLocalSrc(fallbackFontName, fallbackMetrics),
+    'src': renderLocalSrc(fallbackFontName, bold ? fallbackMetrics?.bold : fallbackMetrics, bold ? 'Bold' : 'Regular'),
     'size-adjust': toPercentage(sizeAdjust),
     'ascent-override': toPercentage(ascentOverride),
     'descent-override': toPercentage(descentOverride),
@@ -265,10 +273,14 @@ export function generateFontFace(metrics: FontFaceMetrics, fallback: FallbackOpt
 }
 
 // `local()` matches full and PostScript names, which often carry a `Regular` suffix.
-function renderLocalSrc(font: string, metrics?: FontFaceMetrics) {
+function renderLocalSrc(font: string, metrics: Pick<FontFaceMetrics, 'fullName' | 'postscriptName'> | undefined, style: 'Regular' | 'Bold') {
   const family = withoutQuotes(font)
   const families = genericFamilyLocals[family.toLowerCase()] || [family]
-  const names = new Set(families.flatMap(family => [family, `${family} Regular`, `${family.replace(/\s+/g, '')}-Regular`]))
+  const names = new Set(families.flatMap(family => [
+    ...style === 'Regular' ? [family] : [],
+    `${family} ${style}`,
+    `${family.replace(/\s+/g, '')}-${style}`,
+  ]))
   for (const name of [metrics?.fullName, metrics?.postscriptName]) {
     if (name)
       names.add(name)

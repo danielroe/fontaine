@@ -6,9 +6,10 @@ import { getRandomPort } from 'get-port-please'
 import handler from 'serve-handler'
 import { describe, expect, it } from 'vitest'
 import { generateFallbackName, generateFontFace, isStylesheetRelative, parseFontFace } from '../src/css'
-import { getMetricsForFamily, readMetrics } from '../src/metrics'
+import { getMetricsForFamily, readMetrics, readVariationWidths } from '../src/metrics'
 
 const fixtureURL = new URL('../playground/fonts/font.ttf', import.meta.url)
+const variableFixtureURL = new URL('./fixtures/archivo-variable.woff2', import.meta.url)
 
 describe('generateFontFace', () => {
   it('generates CSS font face fallback ', async () => {
@@ -87,6 +88,31 @@ describe('generateFontFace', () => {
     const notoMetrics = await getMetricsForFamily('Noto Color Emoji')
     expect(generateFontFace(metrics!, { name: 'example fallback', font: 'Noto Color Emoji', metrics: notoMetrics! })).toContain('  size-adjust: 100%;')
   })
+
+  it('should use the bold face of the fallback and its metrics', async () => {
+    const metrics = await readMetrics(fixtureURL)
+    const fallbackMetrics = await getMetricsForFamily('Arial')
+    expect(generateFontFace(metrics!, { 'name': 'example fallback', 'font': 'Arial', 'metrics': fallbackMetrics!, 'bold': true, 'font-weight': 700 })).toMatchInlineSnapshot(`
+      "@font-face {
+        font-family: "example fallback";
+        src: local("Arial Bold"), local("Arial-Bold"), local("Arial-BoldMT");
+        size-adjust: 104.1709%;
+        ascent-override: 100.7959%;
+        descent-override: 33.5986%;
+        line-gap-override: 9.5996%;
+        font-weight: 700;
+      }
+      "
+    `)
+  })
+
+  it('should size a bold fallback without bold metrics by its regular face', async () => {
+    const metrics = await readMetrics(fixtureURL)
+    const { bold, ...fallbackMetrics } = (await getMetricsForFamily('Arial'))!
+    const face = generateFontFace(metrics!, { name: 'example fallback', font: 'sans-serif', metrics: fallbackMetrics, bold: true })
+    expect(face).toContain('  src: local("Arial Bold"), local("Arial-Bold"), local("Arimo Bold"), local("Arimo-Bold"),')
+    expect(face).toContain('  size-adjust: 112.1577%;')
+  })
 })
 
 describe('generateFallbackName', () => {
@@ -101,6 +127,11 @@ describe('getMetricsForFamily', () => {
     expect(metrics).toMatchInlineSnapshot(`
       {
         "ascent": 1968,
+        "bold": {
+          "fullName": "Merriweather Sans Bold",
+          "postscriptName": "MerriweatherSans-Bold",
+          "xWidthAvg": 985,
+        },
         "category": "sans-serif",
         "descent": -546,
         "fullName": "Merriweather Sans Regular",
@@ -138,6 +169,11 @@ describe('getMetricsForFamily', () => {
     expect(metrics).toMatchInlineSnapshot(`
       {
         "ascent": 1025,
+        "bold": {
+          "fullName": "IBM Plex Mono Bold",
+          "postscriptName": "IBMPlexMono-Bold",
+          "xWidthAvg": 600,
+        },
         "category": "monospace",
         "descent": -275,
         "fullName": "IBM Plex Mono Regular",
@@ -175,8 +211,8 @@ describe('getMetricsForFamily', () => {
     ['Liberation Serif', 'Tinos'],
     ['Liberation Mono', 'Cousine'],
   ])('reads metrics for %s from %s', async (family, compatible) => {
-    const { fullName, postscriptName, ...metrics } = (await getMetricsForFamily(compatible))!
-    expect(await getMetricsForFamily(family)).toEqual(metrics)
+    const { fullName, postscriptName, bold, ...metrics } = (await getMetricsForFamily(compatible))!
+    expect(await getMetricsForFamily(family)).toEqual({ ...metrics, bold: { xWidthAvg: bold!.xWidthAvg } })
   })
 
   it('handles non-existent metrics', async () => {
@@ -249,6 +285,53 @@ describe('readMetrics', () => {
     expect(await readMetrics(`/font.ttf`)).toBeNull()
     // absolute on whichever platform the tests run, so this covers a Windows drive letter
     expect(await readMetrics(resolve('font.ttf'))).toBeNull()
+  })
+})
+
+describe('readVariationWidths', () => {
+  const variations: Array<Record<string, number>> = [{ wght: 400 }, { wght: 700 }, { wght: 800 }, { wght: 700, wdth: 125 }, { wght: 400, wdth: 62 }, {}, { wght: 5000, slnt: -10 }]
+  const widths = [0.9622, 1.0355, 1.0887, 1.3206, 0.6555, 1, 1.1631]
+
+  it('should read the relative width of a variable font at each variation', async () => {
+    const result = await readVariationWidths(variableFixtureURL, variations)
+    expect(result!.map(width => +width.toFixed(4))).toEqual(widths)
+  })
+
+  it('should read variation widths from a URL', async () => {
+    const server = createServer((request, response) => handler(request, response, { public: dirname(fileURLToPath(variableFixtureURL)) }))
+    const port = await getRandomPort()
+    server.listen(port, '127.0.0.1')
+    const result = await readVariationWidths(`http://127.0.0.1:${port}/archivo-variable.woff2`, variations)
+    expect(result!.map(width => +width.toFixed(4))).toEqual(widths)
+    server.close()
+  })
+
+  it('should retry a source after a failed read', async () => {
+    let requests = 0
+    const server = createServer((request, response) => {
+      if (requests++ === 0) {
+        response.statusCode = 500
+        response.end()
+        return
+      }
+      handler(request, response, { public: dirname(fileURLToPath(variableFixtureURL)) })
+    })
+    const port = await getRandomPort()
+    server.listen(port, '127.0.0.1')
+    const url = `http://127.0.0.1:${port}/archivo-variable.woff2`
+
+    await expect(readVariationWidths(url, [{ wght: 700 }])).rejects.toThrow()
+    expect(await readVariationWidths(url, [{ wght: 700 }])).toHaveLength(1)
+    server.close()
+  })
+
+  it('should not measure a static font', async () => {
+    expect(await readVariationWidths(fixtureURL, variations)).toBeNull()
+  })
+
+  it('should ignore non-URL paths', async () => {
+    expect(await readVariationWidths('/archivo-variable.woff2', variations)).toBeNull()
+    expect(await readVariationWidths(fileURLToPath(variableFixtureURL), variations)).toBeNull()
   })
 })
 
