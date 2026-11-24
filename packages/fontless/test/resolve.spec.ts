@@ -526,6 +526,50 @@ describe('createResolver', () => {
     })
   })
 
+  describe('fallback instances', () => {
+    const fallbackInstances = [{ weight: 800 }, { weight: 700, stretch: '125%' as const }]
+
+    it('should resolve the fallback instances of a family', async () => {
+      const { provider } = createTrackingProvider('test')
+      const resolver = await createResolver({
+        options: { providers: { test: provider } },
+        providers: { test: provider },
+        normalizeFontData: defaultNormalizeFontData,
+      })
+
+      expect((await resolver('Test Font', { name: 'Test Font', fallbackInstances }))?.fallbackInstances).toEqual(fallbackInstances)
+      expect((await resolver('Test Font', { name: 'Test Font', provider: 'test', fallbackInstances }))?.fallbackInstances).toEqual(fallbackInstances)
+      expect((await resolver('Test Font', { name: 'Test Font' }))?.fallbackInstances).toBeUndefined()
+    })
+
+    it('should resolve the default fallback instances unless a family sets its own', async () => {
+      const { provider } = createTrackingProvider('test')
+      const resolver = await createResolver({
+        options: { providers: { test: provider }, defaults: { fallbackInstances } },
+        providers: { test: provider },
+        normalizeFontData: defaultNormalizeFontData,
+      })
+
+      expect((await resolver('Test Font'))?.fallbackInstances).toEqual(fallbackInstances)
+      expect((await resolver('Test Font', { name: 'Test Font', provider: 'test' }))?.fallbackInstances).toEqual(fallbackInstances)
+      expect((await resolver('Test Font', { name: 'Test Font', src: '/font.woff2' }))?.fallbackInstances).toEqual(fallbackInstances)
+      expect((await resolver('Test Font', { name: 'Test Font', fallbackInstances: [] }))?.fallbackInstances).toEqual([])
+    })
+
+    it('should not treat the fallback instances of a manual family as a descriptor', async () => {
+      const { provider } = createTrackingProvider('test')
+      const resolver = await createResolver({
+        options: { providers: { test: provider } },
+        providers: { test: provider },
+        normalizeFontData: defaultNormalizeFontData,
+      })
+
+      const result = await resolver('Test Font', { name: 'Test Font', src: '/font.woff2', weight: [100, 900], fallbackInstances })
+      expect(result?.fallbackInstances).toEqual(fallbackInstances)
+      expect(result?.fonts?.[0]).not.toHaveProperty('fallbackInstances')
+    })
+  })
+
   describe('apiBase option', () => {
     it('should route provider API requests through the configured proxy', async () => {
       const requested: string[] = []

@@ -149,6 +149,30 @@ Fontless uses category-aware fallback presets shared with the [fontaine](https:/
 
 You can override fallbacks for specific generic families in the `defaults.fallbacks` configuration while keeping the shared defaults for others. This ensures consistent font fallback behavior across your application and reduces cumulative layout shift (CLS).
 
+### Variable Font Fallbacks
+
+A face that declares a `font-weight` range gains a second fallback face per fallback font, matched by `font-weight: 700`. It uses the bold face of the fallback font and is sized to the bold weight of your font, so bold text does not reflow when the web font loads.
+
+Set `fallbackInstances` on a family (or on `defaults`, for every family) to choose which weights and widths get a fallback face of their own:
+
+```ts
+fontless({
+  families: [
+    {
+      name: 'Archivo',
+      src: '/fonts/archivo.woff2',
+      weight: [100, 900],
+      stretch: '62% 125%',
+      fallbackInstances: [{ weight: 700 }, { weight: 800 }, { weight: 700, stretch: '125%' }],
+    },
+  ],
+})
+```
+
+Each instance adds one `@font-face` per fallback font, so list the ones your site uses. Instances outside the range a face declares are skipped, and `fallbackInstances: []` turns the extra faces off. Browsers match `font-stretch` before `font-weight`, so with the configuration above regular text at `font-stretch: 125%` also uses the bold 125% face. Add `{ stretch: '125%' }` to cover it.
+
+Widths are measured from the font file, which needs an `HVAR` table. The exception is the bold weight of a family in the metrics database, which is taken from there.
+
 ## Minification
 
 Generated `@font-face` rules are minified with `lightningcss`, which is an optional peer dependency. Install it alongside `fontless` to enable minification:

@@ -22,6 +22,14 @@ export interface FontlessStorage {
   setItemRaw: (key: string, value: any) => Awaitable<void>
 }
 
+/** A weight and width of a variable font to generate fallback metrics for. */
+export interface FallbackInstance {
+  /** The `font-weight` the instance is used at. Defaults to the regular weight. */
+  weight?: number
+  /** The `font-stretch` the instance is used at, as a percentage. Defaults to the normal width. */
+  stretch?: `${number}%`
+}
+
 export interface FontFallback {
   family?: string
   as: string
@@ -103,6 +111,19 @@ export interface FontFamilyOverrides {
    * @see {@link https://github.com/unjs/unifont | unifont} for the axes each provider supports.
    */
   variableAxis?: VariableAxisOptions
+  /**
+   * Weights and widths of a variable font to generate a further fallback face for, each sized
+   * to the font at that instance and matched by `font-weight` and `font-stretch`. Weights of
+   * 600 and above use the bold face of each fallback font.
+   *
+   * Instances outside the `font-weight` or `font-stretch` range of a face are skipped, so
+   * static fonts are unaffected. Measuring an instance other than the bold weight of a
+   * family with known metrics requires reading the font file.
+   *
+   * @default [{ weight: 700 }]
+   * @example [{ weight: 700 }, { weight: 800 }, { weight: 700, stretch: '125%' }]
+   */
+  fallbackInstances?: FallbackInstance[]
 
   // TODO:
   // as?: string
@@ -195,6 +216,12 @@ export interface FontlessOptions {
      * **Experimental.** Provider support and the option shape may change.
      */
     variableAxis: VariableAxisOptions
+    /**
+     * Weights and widths of a variable font to generate a further fallback face for, for
+     * every family. Overridden by `fallbackInstances` on an individual family.
+     * @default [{ weight: 700 }]
+     */
+    fallbackInstances: FallbackInstance[]
     styles: ResolveFontOptions['styles']
     subsets: ResolveFontOptions['subsets']
     /**

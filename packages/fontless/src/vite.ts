@@ -12,10 +12,10 @@ import { Buffer } from 'node:buffer'
 import { hash } from 'node:crypto'
 import { access, readFile } from 'node:fs/promises'
 import { join, posix } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { defu } from 'defu'
 import { resolveModulePath } from 'exsolve'
-import { readMetrics } from 'fontaine'
+import { readMetrics, readVariationWidths } from 'fontaine'
 import MagicString from 'magic-string'
 import { normalizeFontData } from './assets'
 import { generateFontFace } from './css/render'
@@ -58,6 +58,7 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
   const PACKAGE_NAME = 'fontless'
   const RUNTIME_NAME = `${PACKAGE_NAME}/runtime`
   let storage: ReturnType<typeof createFontlessStorage>
+  let publicDir: string
 
   // Calls made before Vite DevTools mounts the devframe, keyed to drop repeats
   const devframeCalls = new Map<string, (devframe: FontlessDevframe) => void>()
@@ -161,6 +162,22 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
     const metrics = await readMetrics(source)
     await storage.setItem(key, metrics)
     return metrics
+  }
+
+  async function readCachedVariationWidths(source: string, variations: Array<Record<string, number>>) {
+    if (!/^https?:\/\//.test(source)) {
+      // A root-relative URL is served from the public directory, if a file exists there.
+      const file = publicDir && source.startsWith('/') && join(publicDir, decodeURIComponent(source.replace(/[?#].*$/, '')))
+      return readVariationWidths(file && await access(file).then(() => true, () => false) ? pathToFileURL(file) : source, variations)
+    }
+    const key = `data:metrics:${hash('sha256', JSON.stringify([source, variations]), 'base64url')}.json`
+    const cached = await storage.getItem(key) as { widths: Awaited<ReturnType<typeof readVariationWidths>> } | null
+    if (cached) {
+      return cached.widths
+    }
+    const widths = await readVariationWidths(source, variations)
+    await storage.setItem(key, { widths })
+    return widths
   }
 
   // URLs of emitted fonts as the browser will request them, keyed by the URL that was
@@ -297,6 +314,7 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
     }),
     async configResolved(config) {
       command = config.command
+      publicDir = config.publicDir
       storage = createFontlessStorage(_options?.cache, { root: config.root, cacheDir: config.cacheDir })
 
       assetContext = {
@@ -356,6 +374,7 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
         processCSSVariables: options.processCSSVariables,
         selectFontsToPreload,
         readMetrics: readCachedMetrics,
+        readVariationWidths: readCachedVariationWidths,
         fontsToPreload: new Map(),
         dev: config.mode === 'development',
         async resolveFontFace(fontFamily, fallbackOptions) {

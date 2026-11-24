@@ -1,8 +1,8 @@
 import type { RemoteFontSource } from 'unifont'
-import type { FontSource, NormalizedFontFaceData } from '../types'
+import type { FallbackInstance, FontSource, NormalizedFontFaceData } from '../types'
 import { extname, relative } from 'node:path/posix'
 import { setTimeout as sleep } from 'node:timers/promises'
-import { generateFontFace as generateFallbackFontFace, getMetricsForFamily, readMetrics } from 'fontaine'
+import { generateFontFace as generateFallbackFontFace, getMetricsForFamily, readMetrics, readVariationWidths } from 'fontaine'
 import { isFetchableURL } from '../url'
 
 export function generateFontFace(family: string, font: NormalizedFontFaceData): string {
@@ -102,12 +102,27 @@ function resolveProviderMetrics(data: NormalizedFontFaceData, knownMetrics: Fall
 export interface FontFallbackOptions {
   /** Read metrics from a font source. Defaults to `readMetrics` from `fontaine`. */
   readMetrics?: (source: string) => Promise<Awaited<ReturnType<typeof readMetrics>>>
+  /**
+   * Read how wide a variable font is at each variation, relative to its default instance.
+   * Defaults to `readVariationWidths` from `fontaine`.
+   */
+  readVariationWidths?: (source: string, variations: Array<Record<string, number>>) => Promise<number[] | null>
+}
+
+export interface FontFallbackFaceOptions extends FontFallbackOptions {
+  /** Instances of a variable font to generate fallbacks for. Defaults to its bold weight. */
+  instances?: FallbackInstance[]
+  /**
+   * The face to read a variable font from, where another face of the family shares the axes
+   * of `data` and its file is more representative of the text the family renders.
+   */
+  measure?: NormalizedFontFaceData
 }
 
 const METRICS_RETRIES = 2
 const METRICS_RETRY_DELAY = 500
 
-async function readSourceMetrics(family: string, source: string, read: NonNullable<FontFallbackOptions['readMetrics']> = readMetrics) {
+async function readFromSource<T>(family: string, source: string, read: (source: string) => Promise<T>): Promise<T> {
   for (let retries = METRICS_RETRIES; ; retries--) {
     try {
       return await read(source)
@@ -121,28 +136,122 @@ async function readSourceMetrics(family: string, source: string, read: NonNullab
   }
 }
 
+const REGULAR_WEIGHT = 400
+const NORMAL_STRETCH = 100
+const BOLD_WEIGHT = 700
+/** The lightest weight browsers render with the bold face of a family that has only regular and bold. */
+const BOLD_THRESHOLD = 600
+
+const NUMBER_RE = /\d+(?:\.\d+)?/g
+
+function parseRange(value: unknown): [min: number, max: number] | undefined {
+  const [min, max, ...rest] = String(value).match(NUMBER_RE)?.map(Number) || []
+  return max !== undefined && !rest.length && min! < max ? [min!, max] : undefined
+}
+
+function isWithin(value: number | undefined, range: [min: number, max: number] | undefined): boolean {
+  return value === undefined || (!!range && value >= range[0] && value <= range[1])
+}
+
+interface VariableFontInstance {
+  weight?: number
+  /** A percentage. */
+  stretch?: number
+}
+
+function selectFallbackInstances(data: NormalizedFontFaceData, instances: FallbackInstance[] = [{ weight: BOLD_WEIGHT }]): VariableFontInstance[] {
+  const weights = parseRange(data.weight)
+  const stretches = parseRange(data.stretch)
+  return instances
+    .map(({ weight, stretch }) => ({ weight, stretch: stretch === undefined ? undefined : Number.parseFloat(stretch) }))
+    .filter(({ weight, stretch }) => (weight ?? stretch) !== undefined && isWithin(weight, weights) && isWithin(stretch, stretches))
+}
+
+interface FallbackInstanceFace {
+  /** Whether the instance is rendered with the bold face of a fallback font. */
+  bold: boolean
+  /** The average advance width of the font at this instance, relative to its regular one. */
+  width: number
+  descriptors: Record<string, string | number>
+}
+
+/**
+ * Measure how wide a variable font is at each instance, leaving out those that cannot be
+ * measured. The bold weight of a family in the metrics database is taken from there, and
+ * every other instance is read from `source`. `regular` is whether the metrics the widths
+ * will scale describe the regular instance of the font, as opposed to its default one.
+ */
+async function measureFallbackInstances(family: string, instances: VariableFontInstance[], source: string | undefined, knownBold: number | undefined, regular: boolean, read: NonNullable<FontFallbackOptions['readVariationWidths']>): Promise<FallbackInstanceFace[]> {
+  const measured = instances.filter(({ weight, stretch }) => !knownBold || weight !== BOLD_WEIGHT || stretch !== undefined)
+  const widths = measured.length && source
+    ? await readFromSource(family, source, url => read(url, [
+        { wght: REGULAR_WEIGHT, wdth: NORMAL_STRETCH },
+        ...measured.map(({ weight = REGULAR_WEIGHT, stretch = NORMAL_STRETCH }) => ({ wght: weight, wdth: stretch })),
+      ]))
+    : null
+
+  const faces: FallbackInstanceFace[] = []
+  for (const instance of instances) {
+    const index = measured.indexOf(instance)
+    if (index !== -1 && !widths) {
+      continue
+    }
+    faces.push({
+      bold: (instance.weight ?? REGULAR_WEIGHT) >= BOLD_THRESHOLD,
+      width: index === -1 ? knownBold! : widths![index + 1]! / (regular ? widths![0]! : 1),
+      descriptors: {
+        ...(instance.weight !== undefined && { 'font-weight': instance.weight }),
+        ...(instance.stretch !== undefined && { 'font-stretch': `${instance.stretch}%` }),
+      },
+    })
+  }
+  return faces
+}
+
 /**
  * Generate metric-adjusted `@font-face` rules for each fallback, derived from the metrics of
  * `data`. The rules carry the `unicode-range` of `data`, if it has one.
+ *
+ * A variable font gains a further rule per fallback for each instance in `options.instances`,
+ * sized to the font at that instance and matched by `font-weight` and `font-stretch`.
  */
-export async function generateFontFallbacks(family: string, data: NormalizedFontFaceData, fallbacks?: Array<{ name: string, font: string }>, options: FontFallbackOptions = {}): Promise<string[]> {
+export async function generateFontFallbacks(family: string, data: NormalizedFontFaceData, fallbacks?: Array<{ name: string, font: string }>, options: FontFallbackFaceOptions = {}): Promise<string[]> {
   if (!fallbacks?.length)
     return []
 
-  const fontURL = data.src!.find(s => 'url' in s) as RemoteFontSource | undefined
+  const requestedInstances = selectFallbackInstances(data, options.instances)
+  const fontURL = ((requestedInstances.length && options.measure) || data).src.find((s): s is RemoteFontSource => 'url' in s)
+  const source = fontURL && (fontURL.originalURL || fontURL.url)
   const knownMetrics = await getMetricsForFamily(family)
-  const metrics = resolveProviderMetrics(data, knownMetrics) || knownMetrics || (fontURL && await readSourceMetrics(family, fontURL.originalURL || fontURL.url, options.readMetrics))
+  const regularMetrics = resolveProviderMetrics(data, knownMetrics) || knownMetrics
+  const metrics = regularMetrics || (source && await readFromSource(family, source, options.readMetrics ?? readMetrics))
 
   if (!metrics)
     return []
 
+  const knownBold = knownMetrics?.bold && knownMetrics.bold.xWidthAvg / knownMetrics.xWidthAvg
+  const instances = await measureFallbackInstances(family, requestedInstances, source, knownBold, !!regularMetrics, options.readVariationWidths ?? readVariationWidths)
+
   const css: string[] = []
   for (const fallback of fallbacks) {
+    const fallbackMetrics = await getMetricsForFamily(fallback.font) || undefined
     css.push(generateFallbackFontFace(metrics, {
       ...fallback,
-      metrics: await getMetricsForFamily(fallback.font) || undefined,
+      metrics: fallbackMetrics,
       ...(data.unicodeRange?.length && { 'unicode-range': data.unicodeRange.join(', ') }),
     }))
+    for (const instance of instances) {
+      if (instance.bold && !fallbackMetrics?.bold) {
+        continue
+      }
+      css.push(generateFallbackFontFace({ ...metrics, xWidthAvg: metrics.xWidthAvg * instance.width }, {
+        ...fallback,
+        metrics: fallbackMetrics,
+        bold: instance.bold,
+        ...instance.descriptors,
+        ...(data.unicodeRange?.length && { 'unicode-range': data.unicodeRange.join(', ') }),
+      }))
+    }
   }
   return css
 }

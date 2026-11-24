@@ -3,7 +3,7 @@ import type { transform as lightningCSSTransform, TransformOptions as LightningC
 import type { FontFaceData, RemoteFontSource } from 'unifont'
 import type { GenericCSSFamily } from './css/parse'
 import type { FontFallbackOptions } from './css/render'
-import type { Awaitable, NormalizedFontFaceData } from './types'
+import type { Awaitable, FallbackInstance, NormalizedFontFaceData } from './types'
 import { Buffer } from 'node:buffer'
 import { dirname } from 'node:path/posix'
 import { parse, walk } from 'css-tree'
@@ -12,11 +12,14 @@ import MagicString from 'magic-string'
 import { extractEndOfFirstFamily, extractFontFamilies, extractGeneric } from './css/parse'
 import { generateFontFace, generateFontFallbacks, relativiseFontSources } from './css/render'
 import { logger } from './logger'
+import { coversBasicLatin } from './preload'
 import { mergeUnicodeRanges } from './subset'
 
 export interface FontFaceResolution {
   fonts?: NormalizedFontFaceData[]
   fallbacks?: string[]
+  /** Instances of a variable font to generate fallback metric faces for. Defaults to its bold weight. */
+  fallbackInstances?: FallbackInstance[]
   /**
    * Emit only the fallback metric faces, not the primary `@font-face`, and register
    * no preloads (so `selectFontsToPreload` is not called for this family). For
@@ -58,6 +61,20 @@ export interface FontFamilyUsage {
   fallbacks: string[]
   /** URLs of the faces preloaded for this usage. */
   preloads: string[]
+}
+
+/**
+ * The face to measure the variable font instances of `font` from. Faces that declare the same
+ * axis ranges are files of one variable font, of which an upright one covering Basic Latin
+ * holds the most representative glyphs.
+ */
+function findMeasuredFace(font: NormalizedFontFaceData, fonts: NormalizedFontFaceData[]): NormalizedFontFaceData {
+  // A manually configured `unicode-range` may be a single comma-separated string.
+  const coversLatin = (face: NormalizedFontFaceData) => coversBasicLatin({ ...face, unicodeRange: face.unicodeRange?.flatMap(range => range.split(',')) })
+  const rank = (face: NormalizedFontFaceData) => (coversLatin(face) ? 0 : 2) + (!face.style || face.style === 'normal' ? 0 : 1)
+  return fonts
+    .filter(face => String(face.weight) === String(font.weight) && face.stretch === font.stretch)
+    .reduce((best, face) => rank(face) < rank(best) ? face : best, font)
 }
 
 function findSafeInsertionIndex(ast: CssNode): number {
@@ -188,8 +205,17 @@ export async function transformCSS(options: FontFamilyInjectionPluginOptions, co
     const unicodeRange = mergeUnicodeRanges(result.fonts)
 
     for (const font of result.fonts) {
-      const fallbackDeclarations = await generateFontFallbacks(fontFamily, { ...font, unicodeRange }, fallbackMap, options)
-      const missingFallbackDeclarations = fallbackDeclarations.filter((_, i) => !existingFontFamilies.has(fallbackMap[i]!.name))
+      const fallbackFaceOptions = {
+        readMetrics: options.readMetrics,
+        readVariationWidths: options.readVariationWidths,
+        instances: result.fallbackInstances,
+        measure: findMeasuredFace(font, result.fonts),
+      }
+      const fallbackDeclarations = await generateFontFallbacks(fontFamily, { ...font, unicodeRange }, fallbackMap, fallbackFaceOptions)
+      const missingFallbacks = fallbackMap.filter(fallback => !existingFontFamilies.has(fallback.name))
+      const missingFallbackDeclarations = missingFallbacks.length === fallbackMap.length
+        ? fallbackDeclarations
+        : await generateFontFallbacks(fontFamily, { ...font, unicodeRange }, missingFallbacks, fallbackFaceOptions)
       const declarations = fallbacksOnly
         ? missingFallbackDeclarations
         : [generateFontFace(fontFamily, opts.relative ? relativiseFontSources(font, dirname(id).replace(/^\/?/, '/')) : font), ...missingFallbackDeclarations]

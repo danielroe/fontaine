@@ -1,6 +1,6 @@
 import type { FontFaceData, Provider } from 'unifont'
 import type { FontFamilyInjectionPluginOptions, FontFamilyUsage } from '../src/utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createResolver } from '../src/resolve'
 import { transformCSS } from '../src/utils'
 
@@ -305,6 +305,77 @@ describe('fallback unicode-range', () => {
     for (const fallback of fallbacks) {
       expect(fallback).toContain('unicode-range: U+0000-007F, U+2013;')
     }
+  })
+})
+
+describe('variable font fallbacks', () => {
+  const variable = { weight: [100, 900] as [number, number], stretch: '62% 125%' }
+  const latin = { ...variable, src: [{ url: '/archivo-latin.woff2', format: 'woff2' }], unicodeRange: ['U+0000-00FF, U+0131'] }
+  const latinExt = { ...variable, src: [{ url: '/archivo-latin-ext.woff2', format: 'woff2' }], unicodeRange: ['U+0100-02BA'] }
+  const code = `:root { font-family: 'Archivo', sans-serif }`
+
+  function fallbackFaces(css: string) {
+    return css.match(/@font-face\s*\{\s*font-family:\s*"Archivo Fallback[^}]*\}/g) ?? []
+  }
+
+  it('should generate the fallback instances a family resolves with', async () => {
+    const readVariationWidths = vi.fn(async () => [1, 1.5])
+    const result = await transform(code, {
+      readVariationWidths,
+      resolveFontFace: () => ({ fonts: [latin], fallbacks: ['Arial'], fallbackInstances: [{ weight: 700, stretch: '125%' }] }),
+    })
+
+    expect(readVariationWidths).toHaveBeenCalledExactlyOnceWith('/archivo-latin.woff2', [{ wght: 400, wdth: 100 }, { wght: 700, wdth: 125 }])
+    expect(fallbackFaces(result)).toEqual([
+      expect.not.stringContaining('font-weight'),
+      expect.stringMatching(/local\("Arial Bold"\)[^}]*font-weight: 700;\s*font-stretch: 125%;/),
+    ])
+  })
+
+  it('should only emit fallback instances for fallbacks not already in scope', async () => {
+    const result = await transform(`@font-face { font-family: "Archivo Fallback: Arial"; src: local("Arial") }\n${code}`, {
+      readVariationWidths: async () => [1, 1.5],
+      resolveFontFace: () => ({ fonts: [latin], fallbacks: ['Arial', 'Times New Roman'], fallbackInstances: [{ weight: 800 }] }),
+    })
+
+    expect(fallbackFaces(result).filter(face => face.includes('Arial'))).toEqual(['@font-face { font-family: "Archivo Fallback: Arial"; src: local("Arial") }'])
+    expect(fallbackFaces(result).filter(face => face.includes('Times New Roman'))).toEqual([
+      expect.stringContaining('src: local("Times New Roman")'),
+      expect.stringMatching(/local\("Times New Roman Bold"\)[^}]*font-weight: 800;/),
+    ])
+    expect(result).toContain(`font-family: 'Archivo', "Archivo Fallback: Arial", "Archivo Fallback: Times New Roman", sans-serif`)
+  })
+
+  it('should measure every face of a variable font from an upright one that covers Basic Latin', async () => {
+    const readVariationWidths = vi.fn(async (source: string) => [1, source === '/archivo-latin.woff2' ? 1.5 : 2])
+    const result = await transform(code, {
+      readVariationWidths,
+      resolveFontFace: () => ({
+        fonts: [
+          { ...latinExt, style: 'italic' },
+          { ...latin, src: [{ url: '/archivo-latin-italic.woff2', format: 'woff2' }], style: 'italic' },
+          { ...latinExt, style: 'normal' },
+          latin,
+        ],
+        fallbacks: ['Arial'],
+        fallbackInstances: [{ weight: 800 }],
+      }),
+    })
+
+    expect(new Set(readVariationWidths.mock.calls.map(([source]) => source))).toEqual(new Set(['/archivo-latin.woff2']))
+    expect(fallbackFaces(result)).toHaveLength(2)
+  })
+
+  it('should measure faces that declare different axis ranges separately', async () => {
+    const condensed = { src: [{ url: '/archivo-condensed.woff2', format: 'woff2' }], weight: [100, 900] as [number, number], stretch: '62% 100%' }
+    const readVariationWidths = vi.fn(async (source: string) => [1, source === '/archivo-latin.woff2' ? 1.5 : 2])
+    const result = await transform(code, {
+      readVariationWidths,
+      resolveFontFace: () => ({ fonts: [condensed, latin], fallbacks: ['Arial'], fallbackInstances: [{ weight: 800 }] }),
+    })
+
+    expect(new Set(readVariationWidths.mock.calls.map(([source]) => source))).toEqual(new Set(['/archivo-latin.woff2', '/archivo-condensed.woff2']))
+    expect(fallbackFaces(result)).toHaveLength(3)
   })
 })
 

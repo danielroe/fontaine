@@ -8,7 +8,7 @@ const REPRESENTATIVE_CODE_POINT = 0x41
 
 const PREFERRED_WEIGHT = 400
 
-function coversBasicLatin(font: FontFaceData): boolean {
+export function coversBasicLatin(font: FontFaceData): boolean {
   if (!font.unicodeRange?.length) {
     return true
   }

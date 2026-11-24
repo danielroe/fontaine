@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { generateFontFace, generateFontFallbacks, parseFont, relativiseFontSources } from '../src/css/render'
 
@@ -192,6 +192,146 @@ describe('generateFontFallbacks', () => {
         { name: 'Some Unresolvable Font Fallback: Arial', font: 'Arial' },
       ])).toEqual([])
     }
+  })
+})
+
+describe('variable font fallbacks', () => {
+  const variableFont = new URL('../../fontaine/test/fixtures/archivo-variable.woff2', import.meta.url).href
+  const arial = [{ name: 'Archivo Fallback: Arial', font: 'Arial' }]
+
+  function describeFaces(css: string[]) {
+    return css.map(face => ['src', 'size-adjust', 'font-weight', 'font-stretch']
+      .map(descriptor => face.match(new RegExp(`^  ${descriptor}: (local\\("[^"]+"\\)|[^;,]+)`, 'm'))?.[1])
+      .filter(Boolean)
+      .join(' '))
+  }
+
+  function sizeAdjust(face: string) {
+    return Number.parseFloat(face.match(/size-adjust: ([\d.]+)%/)![1]!)
+  }
+
+  it('should add a bold fallback face for a variable font', async () => {
+    const css = await generateFontFallbacks('Archivo', { src: [{ url: '/archivo.woff2' }], weight: [100, 900], unicodeRange: ['U+0000-00FF'] }, arial)
+
+    expect(css).toHaveLength(2)
+    expect(css[1]).toMatchInlineSnapshot(`
+      "@font-face {
+        font-family: "Archivo Fallback: Arial";
+        src: local("Arial Bold"), local("Arial-Bold"), local("Arial-BoldMT");
+        size-adjust: 98.3373%;
+        ascent-override: 89.2845%;
+        descent-override: 21.3551%;
+        line-gap-override: 0%;
+        font-weight: 700;
+        unicode-range: U+0000-00FF;
+      }
+      "
+    `)
+  })
+
+  it('should not change the fallbacks of a static font', async () => {
+    const src = [{ url: variableFont }]
+    const instances = [{ weight: 700 }, { weight: 800 }, { stretch: '125%' as const }]
+    const fallbacks = await generateFontFallbacks('Archivo', { src }, arial)
+
+    expect(describeFaces(fallbacks)).toEqual(['local("Arial") 98.6988%'])
+    for (const face of [{ weight: 400 }, { weight: '700' }, { weight: [700, 700] as [number, number] }, { weight: 700, stretch: 'expanded' }, { stretch: '125%' }]) {
+      expect(await generateFontFallbacks('Archivo', { src, ...face }, arial, { instances })).toEqual(fallbacks)
+    }
+    expect((await generateFontFallbacks('Archivo', { src, weight: [100, 900] }, arial))[0]).toBe(fallbacks[0])
+  })
+
+  it('should measure the requested instances that a face covers from its font file', async () => {
+    const css = await generateFontFallbacks('Archivo', { src: [{ url: variableFont }], weight: '100 900', stretch: '62% 125%' }, arial, {
+      instances: [{ weight: 700 }, { weight: 800 }, { weight: 700, stretch: '125%' }, { weight: 300 }, { stretch: '75%' }, { weight: 950 }, { stretch: '150%' }, {}],
+    })
+
+    expect(describeFaces(css)).toEqual([
+      'local("Arial") 98.6988%',
+      'local("Arial Bold") 98.3373% 700',
+      'local("Arial Bold") 103.7208% 800',
+      'local("Arial Bold") 125.8173% 700 125%',
+      'local("Arial") 96.8729% 300',
+      'local("Arial") 78.0034% 75%',
+    ])
+  })
+
+  it('should not generate width instances for a face without a `font-stretch` range', async () => {
+    const css = await generateFontFallbacks('Archivo', { src: [{ url: variableFont }], weight: [100, 900] }, arial, {
+      instances: [{ weight: 700, stretch: '125%' }, { stretch: '125%' }],
+    })
+
+    expect(css).toHaveLength(1)
+  })
+
+  it('should measure a family without known metrics against its default instance', async () => {
+    const css = await generateFontFallbacks('Some Unknown Variable Font', { src: [{ url: variableFont }], weight: [100, 900] }, arial)
+
+    expect(describeFaces(css)).toEqual([expect.stringContaining('local("Arial")'), expect.stringMatching(/^local\("Arial Bold"\) .* 700$/)])
+    expect(sizeAdjust(css[1]!) / sizeAdjust(css[0]!)).toBeCloseTo(1.0355 * 913 / 983, 3)
+  })
+
+  it('should measure a family with provider metrics against its regular instance', async () => {
+    const css = await generateFontFallbacks('Some Unknown Variable Font', {
+      src: [{ url: variableFont }],
+      weight: [100, 900],
+      metrics: { unitsPerEm: 1000, ascent: 1000, descent: -250, lineGap: 0, xWidthAvg: 500 },
+    } as never, arial)
+
+    expect(sizeAdjust(css[1]!) / sizeAdjust(css[0]!)).toBeCloseTo(1.0762 * 913 / 983, 3)
+  })
+
+  it('should not use the bold face of a fallback without bold metrics', async () => {
+    const css = await generateFontFallbacks('Archivo', { src: [{ url: variableFont }], weight: [100, 900] }, [
+      { name: 'Archivo Fallback: Some Unknown Font', font: 'Some Unknown Font' },
+    ], { instances: [{ weight: 700 }, { weight: 300 }] })
+
+    expect(describeFaces(css)).toEqual(['local("Some Unknown Font") 100%', 'local("Some Unknown Font") 100% 300'])
+  })
+
+  it('should skip instances whose font file cannot be measured', async () => {
+    const instances = [{ weight: 700 }, { weight: 800 }]
+    const expected = ['local("Arial") 98.6988%', 'local("Arial Bold") 98.3373% 700']
+
+    expect(describeFaces(await generateFontFallbacks('Archivo', { src: [{ url: '/archivo.woff2' }], weight: [100, 900] }, arial, { instances }))).toEqual(expected)
+    expect(describeFaces(await generateFontFallbacks('Archivo', { src: [{ name: 'Archivo' }], weight: [100, 900] }, arial, { instances }))).toEqual(expected)
+  })
+
+  it('should measure instances from another face of the family', async () => {
+    const css = await generateFontFallbacks('Archivo', { src: [{ url: '/archivo-latin-ext.woff2' }], weight: [100, 900] }, arial, {
+      instances: [{ weight: 800 }],
+      measure: { src: [{ url: variableFont }], weight: [100, 900] },
+    })
+
+    expect(describeFaces(css)).toEqual(['local("Arial") 98.6988%', 'local("Arial Bold") 103.7208% 800'])
+  })
+
+  it('should read a variable font without known metrics from the face it is measured from', async () => {
+    const latin = { src: [{ url: variableFont }], weight: [100, 900] as [number, number] }
+    const latinExt = { src: [{ url: '/archivo-latin-ext.woff2' }], weight: [100, 900] as [number, number] }
+    const fallbacks = await generateFontFallbacks('Some Unknown Variable Font', latin, arial)
+
+    expect(fallbacks).toHaveLength(2)
+    expect(await generateFontFallbacks('Some Unknown Variable Font', latinExt, arial, { measure: latin })).toEqual(fallbacks)
+  })
+
+  it('should read a static font without known metrics from its own file', async () => {
+    const face = { src: [{ url: new URL('fixtures/font.woff2', import.meta.url).href }] }
+    const fallbacks = await generateFontFallbacks('Some Unknown Static Font', face, arial)
+
+    expect(fallbacks).toHaveLength(1)
+    expect(await generateFontFallbacks('Some Unknown Static Font', face, arial, { measure: { src: [{ url: variableFont }] } })).toEqual(fallbacks)
+  })
+
+  it('should read variation widths from the original URL of a font', async () => {
+    const readVariationWidths = vi.fn(async () => [0.8, 1.2])
+    const css = await generateFontFallbacks('Archivo', {
+      src: [{ url: '/_fonts/archivo.woff2', originalURL: 'https://cdn.example.com/archivo.woff2' }],
+      weight: [100, 900],
+    }, arial, { instances: [{ weight: 300 }], readVariationWidths })
+
+    expect(readVariationWidths).toHaveBeenCalledExactlyOnceWith('https://cdn.example.com/archivo.woff2', [{ wght: 400, wdth: 100 }, { wght: 300, wdth: 100 }])
+    expect(sizeAdjust(css[1]!) / sizeAdjust(css[0]!)).toBeCloseTo(1.5, 3)
   })
 })
 
