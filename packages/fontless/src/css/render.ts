@@ -109,7 +109,7 @@ export interface FontFallbackOptions {
   readVariationWidths?: (source: string, variations: Array<Record<string, number>>) => Promise<number[] | null>
 }
 
-export interface FontFallbackFaceOptions extends FontFallbackOptions {
+interface FontFallbackFaceOptions extends FontFallbackOptions {
   /** Instances of a variable font to generate fallbacks for. Defaults to its bold weight. */
   instances?: FallbackInstance[]
   /**
@@ -170,7 +170,7 @@ function selectFallbackInstances(data: NormalizedFontFaceData, instances: Fallba
 interface FallbackInstanceFace {
   /** Whether the instance is rendered with the bold face of a fallback font. */
   bold: boolean
-  /** The average advance width of the font at this instance, relative to its regular one. */
+  /** The average advance width of the font at this instance, relative to the one its metrics describe. */
   width: number
   descriptors: Record<string, string | number>
 }
