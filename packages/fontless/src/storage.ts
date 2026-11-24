@@ -1,6 +1,7 @@
 import type { FontlessOptions, FontlessStorage } from './types'
 
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { cwd } from 'node:process'
 
@@ -32,7 +33,10 @@ function keyToPath(base: string, key: string) {
 
 async function write(path: string, contents: string | Uint8Array) {
   await mkdir(dirname(path), { recursive: true })
-  await writeFile(path, contents)
+  // Written beside the entry and renamed over it, so an interrupted write cannot be read back.
+  const temporary = `${path}.${randomUUID()}.tmp`
+  await writeFile(temporary, contents)
+  await rename(temporary, path)
 }
 
 async function read(path: string) {
