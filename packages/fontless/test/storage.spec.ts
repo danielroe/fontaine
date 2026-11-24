@@ -81,7 +81,7 @@ describe('createFontlessStorage', () => {
     expect(await readdir(root)).toEqual([])
   })
 
-  it('should not read back an interrupted write', async () => {
+  it('should not leave an interrupted write behind', async () => {
     const dir = await scratchDir()
     const storage = createFontlessStorage(dir)
 
@@ -94,6 +94,7 @@ describe('createFontlessStorage', () => {
     }
 
     expect(await storage.getItemRaw('key')).toBeNull()
+    expect(await readdir(dir)).toEqual([])
   })
 
   it('should use a provided unstorage instance as-is', () => {

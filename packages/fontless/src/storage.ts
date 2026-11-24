@@ -1,7 +1,7 @@
 import type { FontlessOptions, FontlessStorage } from './types'
 
 import { randomUUID } from 'node:crypto'
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { cwd } from 'node:process'
 
@@ -35,8 +35,14 @@ async function write(path: string, contents: string | Uint8Array) {
   await mkdir(dirname(path), { recursive: true })
   // Written beside the entry and renamed over it, so an interrupted write cannot be read back.
   const temporary = `${path}.${randomUUID()}.tmp`
-  await writeFile(temporary, contents)
-  await rename(temporary, path)
+  try {
+    await writeFile(temporary, contents)
+    await rename(temporary, path)
+  }
+  catch (error) {
+    await rm(temporary, { force: true })
+    throw error
+  }
 }
 
 async function read(path: string) {
