@@ -37,6 +37,12 @@ export interface FontFamilyInjectionPluginOptions extends FontFallbackOptions {
   selectFontsToPreload?: (fontFamily: string, fonts: FontFaceData[]) => FontFaceData[]
   fontsToPreload: Map<string, Set<string>>
   /**
+   * Families declared `global`, whose `@font-face` the host emits itself. Their usage sites
+   * receive only metric-override fallbacks, as with `fallbacksOnly`, even where the host's
+   * `@font-face` for the family is bundled into the stylesheet being transformed.
+   */
+  globalFamilies?: Set<string>
+  /**
    * Called once per stylesheet with every font family it uses, whether or not they resolved.
    * The list replaces any reported earlier for the same stylesheet.
    */
@@ -140,6 +146,9 @@ export async function transformCSS(options: FontFamilyInjectionPluginOptions, co
   const promises = [] as Promise<unknown>[]
   const usages: FontFamilyUsage[] = []
 
+  // Collect existing `@font-face` declarations (to skip adding them)
+  const existingFontFamilies = new Set<string>()
+
   async function addFontFaceDeclaration(fontFamily: string, fallbackOptions: {
     generic?: GenericCSSFamily
     fallbacks: string[]
@@ -157,9 +166,10 @@ export async function transformCSS(options: FontFamilyInjectionPluginOptions, co
 
     const fallbackMap = result.fallbacks?.map(f => ({ font: f, name: `${fontFamily} Fallback: ${f}` })) || []
     let insertFontFamilies = false
+    const fallbacksOnly = result.fallbacksOnly || options.globalFamilies?.has(fontFamily)
 
     result.fonts.sort((a, b) => (a.meta?.priority || 0) - (b.meta?.priority || 0))
-    const fontsToPreload = result.fallbacksOnly ? [] : (options.selectFontsToPreload?.(fontFamily, result.fonts) ?? [])
+    const fontsToPreload = fallbacksOnly ? [] : (options.selectFontsToPreload?.(fontFamily, result.fonts) ?? [])
     const preloads: string[] = []
     for (const font of fontsToPreload) {
       const fontToPreload = font.src.find((s): s is RemoteFontSource => 'url' in s)?.url
@@ -179,9 +189,10 @@ export async function transformCSS(options: FontFamilyInjectionPluginOptions, co
 
     for (const font of result.fonts) {
       const fallbackDeclarations = await generateFontFallbacks(fontFamily, { ...font, unicodeRange }, fallbackMap, options)
-      const declarations = result.fallbacksOnly
-        ? fallbackDeclarations
-        : [generateFontFace(fontFamily, opts.relative ? relativiseFontSources(font, dirname(id).replace(/^\/?/, '/')) : font), ...fallbackDeclarations]
+      const missingFallbackDeclarations = fallbackDeclarations.filter((_, i) => !existingFontFamilies.has(fallbackMap[i]!.name))
+      const declarations = fallbacksOnly
+        ? missingFallbackDeclarations
+        : [generateFontFace(fontFamily, opts.relative ? relativiseFontSources(font, dirname(id).replace(/^\/?/, '/')) : font), ...missingFallbackDeclarations]
 
       for (const declaration of declarations) {
         if (!injectedDeclarations.has(declaration)) {
@@ -205,7 +216,7 @@ export async function transformCSS(options: FontFamilyInjectionPluginOptions, co
 
     const prefaces = await Promise.all(pendingDeclarations.map(declaration => renderDeclaration(declaration, id, options)))
 
-    if (safeInsertionIndex > 0) {
+    if (prefaces.length && safeInsertionIndex > 0) {
       // Add a newline before font-face declarations when inserting after at-rules
       s.appendLeft(safeInsertionIndex, `\n${prefaces.join('')}`)
     }
@@ -218,9 +229,6 @@ export async function transformCSS(options: FontFamilyInjectionPluginOptions, co
       s.prependLeft(fallbackOptions.index, `, ${insertedFamilies}`)
     }
   }
-
-  // Collect existing `@font-face` declarations (to skip adding them)
-  const existingFontFamilies = new Set<string>()
 
   // For nested CSS we need to keep track how long the parent selector is
   function processNode(node: CssNode, parentOffset = 0) {
@@ -244,7 +252,10 @@ export async function transformCSS(options: FontFamilyInjectionPluginOptions, co
 
         // Only add @font-face for the first font-family in the list and treat the rest as fallbacks
         const [fontFamily, ...fallbacks] = extractFontFamilies(node)
-        if (fontFamily && !existingFontFamilies.has(fontFamily)) {
+        if (!fontFamily || fallbacks.some(f => f.startsWith(`${fontFamily} Fallback: `))) {
+          return
+        }
+        if (!existingFontFamilies.has(fontFamily) || options.globalFamilies?.has(fontFamily)) {
           promises.push(addFontFaceDeclaration(fontFamily, {
             fallbacks,
             generic: extractGeneric(node),

@@ -140,7 +140,7 @@ export function extractFontFamilies(node: Declaration): string[] {
   }
 
   if (buffer) {
-    families.push(buffer)
+    families.push(buffer.replace(/\\/g, ''))
   }
 
   return families
