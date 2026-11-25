@@ -3,7 +3,7 @@ import type { FontlessDevframeState } from '../src/devtools'
 import { connectDevframe } from 'devframe/client'
 import { computed, ref, shallowRef, watchEffect } from 'vue'
 
-export const DEFAULT_DOCS_URL = 'https://github.com/unjs/fontaine/tree/main/packages/fontless#devtools'
+export const DEFAULT_DOCS_URL = 'https://github.com/made-in-common/fontaine/tree/main/packages/fontless#devtools'
 
 export function useFontless() {
   const state = shallowRef<FontlessDevframeState>()

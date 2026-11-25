@@ -11,7 +11,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/unjs/fontaine.git",
+    "url": "git+https://github.com/made-in-common/fontaine.git",
     "directory": "packages/fontless"
   },
   "keywords": [

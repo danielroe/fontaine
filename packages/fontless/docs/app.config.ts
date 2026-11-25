@@ -26,7 +26,7 @@ export default defineAppConfig({
       links: [
         {
           icon: 'lucide:github',
-          to: 'https://github.com/unjs/fontaine/blob/main/packages/fontless',
+          to: 'https://github.com/made-in-common/fontaine/blob/main/packages/fontless',
           target: '_blank',
         },
       ],
@@ -44,7 +44,7 @@ export default defineAppConfig({
       links: [
         {
           icon: 'lucide:github',
-          to: 'https://github.com/unjs/fontaine/blob/main/packages/fontless',
+          to: 'https://github.com/made-in-common/fontaine/blob/main/packages/fontless',
           target: '_blank',
         },
       ],
@@ -55,13 +55,13 @@ export default defineAppConfig({
         {
           title: 'Star on GitHub',
           icon: 'lucide:star',
-          to: 'https://github.com/unjs/fontaine/blob/main/packages/fontless',
+          to: 'https://github.com/made-in-common/fontaine/blob/main/packages/fontless',
           target: '_blank',
         },
         {
           title: 'Create Issues',
           icon: 'lucide:circle-dot',
-          to: 'https://github.com/unjs/fontaine/issues',
+          to: 'https://github.com/made-in-common/fontaine/issues',
           target: '_blank',
         },
       ],

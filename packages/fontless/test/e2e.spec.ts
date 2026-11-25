@@ -105,7 +105,7 @@ describe(`e2e ${RSC_FIXTURE}`, () => {
 
     // Fonts used to be emitted into every environment's bundle, because the plugin's
     // rendered font state is shared across environments. See
-    // https://github.com/unjs/fontaine/pull/653
+    // https://github.com/made-in-common/fontaine/pull/653
     for (const environment of environments) {
       expect([...emitted[environment]!].sort(), `unexpected fonts in ${environment} bundle`)
         .toEqual([...referenced[environment]!].sort())

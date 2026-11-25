@@ -7,8 +7,8 @@
 
 > Automatic font fallback based on font metrics
 
-- [✨ &nbsp;Changelog](https://github.com/unjs/fontaine/blob/main/CHANGELOG.md)
-- [▶️ &nbsp;Online playground](https://stackblitz.com/github/unjs/fontaine/tree/main/packages/fontaine/playground)
+- [✨ &nbsp;Changelog](https://github.com/made-in-common/fontaine/blob/main/CHANGELOG.md)
+- [▶️ &nbsp;Online playground](https://stackblitz.com/github/made-in-common/fontaine/tree/main/packages/fontaine/playground)
 
 ## Features
 
@@ -285,7 +285,7 @@ Published under [MIT License](./LICENCE).
 [npm-version-href]: https://npmx.dev/package/fontaine
 [npm-downloads-src]: https://npmx.dev/api/registry/badge/downloads/fontaine
 [npm-downloads-href]: https://npmx.dev/package/fontaine
-[github-actions-src]: https://img.shields.io/github/actions/workflow/status/unjs/fontaine/ci.yml?branch=main&style=flat-square
-[github-actions-href]: https://github.com/unjs/fontaine/actions/workflows/ci.yml
-[codecov-src]: https://img.shields.io/codecov/c/gh/unjs/fontaine/main?style=flat-square
-[codecov-href]: https://codecov.io/gh/unjs/fontaine
+[github-actions-src]: https://img.shields.io/github/actions/workflow/status/made-in-common/fontaine/ci.yml?branch=main&style=flat-square
+[github-actions-href]: https://github.com/made-in-common/fontaine/actions/workflows/ci.yml
+[codecov-src]: https://img.shields.io/codecov/c/gh/made-in-common/fontaine/main?style=flat-square
+[codecov-href]: https://codecov.io/gh/made-in-common/fontaine
