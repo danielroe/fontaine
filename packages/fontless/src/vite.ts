@@ -25,7 +25,7 @@ import { selectPreloadFonts } from './preload'
 import { resolveProviders } from './providers'
 import { createResolver, getFamilyOverride } from './resolve'
 import { createFontlessStorage } from './storage'
-import { subsetFontData } from './subset'
+import { getSubsetterVersion, subsetFontData } from './subset'
 import { isFetchableURL, joinURL } from './url'
 import { renderDeclaration, transformCSS } from './utils'
 
@@ -113,7 +113,22 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
   async function loadFont(file: string, { url, init, subset, variationAxes }: RenderedFont): Promise<Buffer> {
     if (url.startsWith('file://')) {
       const font = await readFile(fileURLToPath(url))
-      return subset ? subsetFontData(font, subset, url, variationAxes) : font
+      if (!subset) {
+        return font
+      }
+      // A local file can change between builds without its emitted file name changing, so
+      // its subset is keyed by its contents and by the versions of the subsetting toolchain.
+      const subsetterVersion = getSubsetterVersion()
+      const key = subsetterVersion && `data:subsets:${hash('sha256', JSON.stringify([subsetterVersion, hash('sha256', font, 'base64url'), subset, variationAxes ?? null]), 'base64url')}`
+      const cached = key && await storage.getItemRaw(key) as Buffer | null
+      if (cached) {
+        return cached
+      }
+      const { data, fallback } = await subsetFontData(font, subset, url, variationAxes)
+      if (key && !fallback) {
+        await storage.setItemRaw(key, data)
+      }
+      return data
     }
 
     // The file name is hashed from the glyph list and axis values as well as the URL, so
@@ -129,7 +144,7 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
       throw new Error(`Could not fetch font from \`${url}\` (${response.status} ${response.statusText}).`)
     }
     const downloaded = Buffer.from(await response.arrayBuffer())
-    const res = subset ? await subsetFontData(downloaded, subset, url, variationAxes) : downloaded
+    const res = subset ? (await subsetFontData(downloaded, subset, url, variationAxes)).data : downloaded
     await storage.setItemRaw(key, res)
     return res
   }

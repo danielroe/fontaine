@@ -3,8 +3,24 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createStorage } from 'unstorage'
 import memoryDriver from 'unstorage/drivers/memory'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createFontlessStorage } from '../src/storage'
+
+const interrupt = vi.hoisted(() => ({ writes: false }))
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const fs = await importOriginal<typeof import('node:fs/promises')>()
+  return {
+    ...fs,
+    writeFile: async (...args: Parameters<typeof fs.writeFile>) => {
+      if (!interrupt.writes) {
+        return fs.writeFile(...args)
+      }
+      await fs.writeFile(args[0], String(args[1]).slice(0, 1))
+      throw new Error('interrupted')
+    },
+  }
+})
 
 const scratchDir = () => mkdtemp(join(tmpdir(), 'fontless-cache-'))
 
@@ -63,6 +79,22 @@ describe('createFontlessStorage', () => {
 
     expect(await storage.getItem('key')).toBe('value')
     expect(await readdir(root)).toEqual([])
+  })
+
+  it('should not leave an interrupted write behind', async () => {
+    const dir = await scratchDir()
+    const storage = createFontlessStorage(dir)
+
+    interrupt.writes = true
+    try {
+      await expect(storage.setItemRaw('key', 'value')).rejects.toThrow('interrupted')
+    }
+    finally {
+      interrupt.writes = false
+    }
+
+    expect(await storage.getItemRaw('key')).toBeNull()
+    expect(await readdir(dir)).toEqual([])
   })
 
   it('should use a provided unstorage instance as-is', () => {
