@@ -13,6 +13,7 @@ export { createResolver, getFamilyOverride } from './resolve'
 
 export type { Resolver } from './resolve'
 export type {
+  FallbackInstance,
   FontFallback,
   FontFamilyManualOverride,
   FontFamilyOverrides,

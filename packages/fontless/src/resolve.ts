@@ -19,7 +19,7 @@ interface ResolverContext {
 }
 
 /** Family-level keys that are not `@font-face` descriptors and must not be passed through to `normalizeFontData`. */
-const NON_DESCRIPTOR_KEYS = new Set(['name', 'global', 'preload', 'fallbacks', 'provider', 'providerOptions', 'glyphs', 'variableAxis'])
+const NON_DESCRIPTOR_KEYS = new Set(['name', 'global', 'preload', 'fallbacks', 'fallbackInstances', 'provider', 'providerOptions', 'glyphs', 'variableAxis'])
 
 /**
  * Providers whose `experimental.glyphs` option means 'these characters', so a family's
@@ -273,6 +273,7 @@ export async function createResolver(context: ResolverContext): Promise<Resolver
     }
 
     const fallbacks = resolveFallbacks(override, fallbackOptions)
+    const fallbackInstances = override?.fallbackInstances ?? options.defaults?.fallbackInstances
     const glyphs = override?.glyphs ? normalizeGlyphs(override.glyphs) : defaultGlyphs
     const variableAxis = override?.variableAxis ?? options.defaults?.variableAxis
     const transforms = { ...(glyphs && { glyphs }), ...(variableAxis && { variableAxis }) }
@@ -289,6 +290,7 @@ export async function createResolver(context: ResolverContext): Promise<Resolver
       })
       return {
         fallbacks,
+        fallbackInstances,
         fonts,
       }
     }
@@ -345,6 +347,7 @@ export async function createResolver(context: ResolverContext): Promise<Resolver
         })
         return {
           fallbacks: resolveFallbacks(override, fallbackOptions, result.fallbacks),
+          fallbackInstances,
           fonts: fontsWithLocalFallbacks,
         }
       }
@@ -379,6 +382,7 @@ export async function createResolver(context: ResolverContext): Promise<Resolver
     })
     return {
       fallbacks: resolveFallbacks(override, fallbackOptions, result.fallbacks),
+      fallbackInstances,
       fonts: fontsWithLocalFallbacks,
     }
   }

@@ -71,6 +71,7 @@
   "dependencies": {
     "@capsizecss/unpack": "^4.0.0",
     "css-tree": "^3.1.0",
+    "fontkitten": "^1.0.3",
     "magic-string": "^1.0.0",
     "unplugin": "^3.0.0"
   },
