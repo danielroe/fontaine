@@ -61,6 +61,18 @@ describe('normalizeFontData', () => {
     expect(source.url.endsWith([...context.renderedFontURLs.keys()][0]!)).toBe(true)
   })
 
+  it('should resolve a source for each context it is given', () => {
+    const face = { src: [{ url: 'file:///fonts/font.woff2', format: 'woff2' }] }
+    const resolve = (environment: string) => {
+      const [resolved] = normalizeFontData(createContext({ resolveAssetURL: () => `__VITE_ASSET__${environment}__` }), face)
+      return resolved!.src[0]
+    }
+
+    expect(resolve('client')).toMatchObject({ url: '__VITE_ASSET__client__', originalURL: 'file:///fonts/font.woff2' })
+    expect(resolve('ssr')).toMatchObject({ url: '__VITE_ASSET__ssr__', originalURL: 'file:///fonts/font.woff2' })
+    expect(face.src).toEqual([{ url: 'file:///fonts/font.woff2', format: 'woff2' }])
+  })
+
   it('should report rendered fonts to the callback with their public URL', () => {
     const seen: Array<[string, string]> = []
     const context = createContext({ baseURL: '/build/', callback: (file, url) => void seen.push([file, url]) })
