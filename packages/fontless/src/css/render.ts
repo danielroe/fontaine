@@ -157,8 +157,8 @@ function isRange(range: [min: number, max: number] | undefined): boolean {
   return !!range && range[0] < range[1]
 }
 
-function isWithin(value: number | undefined, range: [min: number, max: number] | undefined): boolean {
-  return value === undefined || (!!range && value >= range[0] && value <= range[1])
+function isWithin(value: number, range: [min: number, max: number] | undefined): boolean {
+  return !!range && value >= range[0] && value <= range[1]
 }
 
 interface VariableFontInstance {
@@ -175,7 +175,7 @@ function selectFallbackInstances(data: NormalizedFontFaceData, instances: Fallba
   }
   return instances
     .map(({ weight, stretch }) => ({ weight, stretch: stretch === undefined ? undefined : Number.parseFloat(stretch) }))
-    .filter(({ weight, stretch }) => (weight ?? stretch) !== undefined && isWithin(weight, weights) && isWithin(stretch, stretches))
+    .filter(({ weight, stretch }) => (weight ?? stretch) !== undefined && isWithin(weight ?? REGULAR_WEIGHT, weights) && isWithin(stretch ?? NORMAL_STRETCH, stretches))
 }
 
 interface FallbackInstanceFace {

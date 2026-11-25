@@ -169,7 +169,7 @@ fontless({
 })
 ```
 
-Each instance adds one `@font-face` per fallback font, so list the ones your site uses. Instances outside the range a face declares are skipped, and `fallbackInstances: []` turns the extra faces off. Browsers match `font-stretch` before `font-weight`, so with the configuration above regular text at `font-stretch: 125%` also uses the bold 125% face. Add `{ stretch: '125%' }` to cover it.
+Each instance adds one `@font-face` per fallback font, so list the ones your site uses. Instances outside the range a face declares are skipped (an instance without a `weight` is at 400, and one without a `stretch` at 100%), and `fallbackInstances: []` turns the extra faces off. Browsers match `font-stretch` before `font-weight`, so with the configuration above regular text at `font-stretch: 125%` also uses the bold 125% face. Add `{ stretch: '125%' }` to cover it.
 
 Widths are measured from the font file, which needs an `HVAR` table. The exception is the bold weight of a family in the metrics database, which is taken from there.
 

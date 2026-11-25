@@ -276,6 +276,14 @@ describe('variable font fallbacks', () => {
       .toEqual(['local("Arial") 98.6988%', 'local("Arial Bold") 125.8173% 700 125%'])
   })
 
+  it('should skip instances whose default coordinates a face does not cover', async () => {
+    const src = [{ url: variableFont }]
+
+    expect(await generateFontFallbacks('Archivo', { src, weight: [100, 900], stretch: '110% 125%' }, arial)).toHaveLength(1)
+    expect(describeFaces(await generateFontFallbacks('Archivo', { src, weight: 700, stretch: '62% 125%' }, arial, { instances: [{ stretch: '125%' }, { weight: 700 }] })))
+      .toEqual(['local("Arial") 98.6988%', 'local("Arial Bold") 98.3373% 700'])
+  })
+
   it('should measure a family without known metrics against its default instance', async () => {
     const css = await generateFontFallbacks('Some Unknown Variable Font', { src: [{ url: variableFont }], weight: [100, 900] }, arial)
 
