@@ -111,7 +111,9 @@ function blankLineComments(code: string): string {
 
     if (char === '"' || char === '\'') {
       const end = code.indexOf(char, index + 1)
-      const stop = end === -1 ? code.length : end + 1
+      const stop = end === -1
+        ? code.length
+        : end + 1
       result += code.slice(index, stop)
       index = stop
       continue
@@ -119,7 +121,9 @@ function blankLineComments(code: string): string {
 
     if (char === '/' && code[index + 1] === '*') {
       const end = code.indexOf('*/', index + 2)
-      const stop = end === -1 ? code.length : end + 2
+      const stop = end === -1
+        ? code.length
+        : end + 2
       result += code.slice(index, stop)
       index = stop
       continue
@@ -128,7 +132,9 @@ function blankLineComments(code: string): string {
     // `url(...)` is unquoted, so its `//` must not be treated as a comment
     if ((char === 'u' || char === 'U') && /^url\(/i.test(code.slice(index, index + 4))) {
       const end = code.indexOf(')', index)
-      const stop = end === -1 ? code.length : end + 1
+      const stop = end === -1
+        ? code.length
+        : end + 1
       result += code.slice(index, stop)
       index = stop
       continue
@@ -136,7 +142,9 @@ function blankLineComments(code: string): string {
 
     if (char === '/' && code[index + 1] === '/') {
       const newline = code.indexOf('\n', index)
-      const stop = newline === -1 ? code.length : newline
+      const stop = newline === -1
+        ? code.length
+        : newline
       result += ' '.repeat(stop - index)
       index = stop
       continue
@@ -171,7 +179,10 @@ function extractCssImports(ast: CssNode): CssImport[] {
       }
 
       if (specifier && !conditional && !specifier.startsWith('http:') && !specifier.startsWith('https:') && !specifier.startsWith('data:')) {
-        imports.push({ specifier: specifier.replace(/[?#].*$/, ''), end: node.loc!.end.offset })
+        imports.push({
+          specifier: specifier.replace(/[?#].*$/, ''),
+          end: node.loc!.end.offset,
+        })
       }
     },
   })
@@ -214,13 +225,17 @@ export const FontaineTransform: ReturnType<typeof createUnplugin<FontaineTransfo
         const s = new MagicString(code)
         const inserted = new Set<string>()
 
-        const ast = parse(SCSS_RE.test(id) ? blankLineComments(code) : code, { positions: true })
+        const ast = parse(SCSS_RE.test(id)
+          ? blankLineComments(code)
+          : code, { positions: true })
 
         const fontFaces = parseFontFace(ast).map(face => ({ ...face, importer: id, prefix: '' }))
 
         if (isAbsolute(id)) {
           const imports = extractCssImports(ast)
-          const insertionIndex = imports.length ? Math.max(...imports.map(i => i.end)) : 0
+          const insertionIndex = imports.length
+            ? Math.max(...imports.map(i => i.end))
+            : 0
           const seen = new Set([id])
           const queue = imports.map(i => ({ specifier: i.specifier, importer: id }))
 
@@ -235,9 +250,16 @@ export const FontaineTransform: ReturnType<typeof createUnplugin<FontaineTransfo
             if (importedCss === null)
               continue
 
-            const importedAst = parse(SCSS_RE.test(resolved) ? blankLineComments(importedCss) : importedCss, { positions: true })
+            const importedAst = parse(SCSS_RE.test(resolved)
+              ? blankLineComments(importedCss)
+              : importedCss, { positions: true })
             for (const face of parseFontFace(importedAst)) {
-              fontFaces.push({ ...face, index: insertionIndex, importer: resolved, prefix: '\n' })
+              fontFaces.push({
+                ...face,
+                index: insertionIndex,
+                importer: resolved,
+                prefix: '\n',
+              })
             }
             for (const nested of extractCssImports(importedAst)) {
               queue.push({ specifier: nested.specifier, importer: resolved })

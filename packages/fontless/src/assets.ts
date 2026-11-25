@@ -17,11 +17,16 @@ function hashableSource(context: NormalizeFontDataContext, source: { url: string
   if (!source.url.startsWith('file://') || !context.root) {
     return source
   }
-  return { ...source, url: relative(context.root, fileURLToPath(source.url)) }
+  return {
+    ...source,
+    url: relative(context.root, fileURLToPath(source.url)),
+  }
 }
 
 function toArray<T>(value?: T | T[]): T[] {
-  return !value || Array.isArray(value) ? value as T[] : [value]
+  return !value || Array.isArray(value)
+    ? value as T[]
+    : [value]
 }
 
 /** A remote font to download, keyed in `renderedFontURLs` by the file name it will be emitted as. */
@@ -80,11 +85,17 @@ export function normalizeFontData(context: NormalizeFontDataContext, faces: RawF
     const requested = options.variableAxis && resolveVariationAxes(options.variableAxis)
     // Instancing means subsetting, so it needs a glyph list: the family's own, or the
     // characters the face declares it can render.
-    const glyphs = requested || !isCoveredBy(unicodeRange, options.glyphs) ? options.glyphs : undefined
-    const text = glyphs ?? (requested ? unicodeRangeToText(unicodeRange) : undefined)
+    const glyphs = requested || !isCoveredBy(unicodeRange, options.glyphs)
+      ? options.glyphs
+      : undefined
+    const text = glyphs ?? (requested
+      ? unicodeRangeToText(unicodeRange)
+      : undefined)
     const variationAxes = text ? requested?.axes : undefined
     const src = toArray(face.src).map((src) => {
-      const source = typeof src === 'string' ? parseFont(src) : { ...src }
+      const source = typeof src === 'string'
+        ? parseFont(src)
+        : { ...src }
       if ('url' in source && isFetchableURL(source.url, true)) {
         source.url = source.url.replace(/^\/\//, 'https://')
         const { pathname } = new URL(source.url)
@@ -93,11 +104,20 @@ export function normalizeFontData(context: NormalizeFontDataContext, faces: RawF
           // TODO: investigate why negative ignore pattern below is being ignored
           hash(basename(pathname, extname(pathname)) || source.url.replace(/[?#].*/, '')).replace(/^-+/, '').slice(0, MAX_FILENAME_PREFIX_LENGTH),
           hash(text || variationAxes
-            ? { source: hashableSource(context, source), ...(text && { glyphs: text }), ...(variationAxes && { variationAxes }) }
+            ? {
+                source: hashableSource(context, source),
+                ...(text && { glyphs: text }),
+                ...(variationAxes && { variationAxes }),
+              }
             : hashableSource(context, source)).replace(/-/, '_') + (extname(pathname) || formatToExtension(source.format) || ''),
         ].filter(Boolean).join('-')
 
-        context.renderedFontURLs.set(file, { url: source.url, init: face.meta?.init, subset: text, variationAxes })
+        context.renderedFontURLs.set(file, {
+          url: source.url,
+          init: face.meta?.init,
+          subset: text,
+          variationAxes,
+        })
         subsetted ||= Boolean(text)
         source.originalURL = source.url
 
@@ -115,7 +135,9 @@ export function normalizeFontData(context: NormalizeFontDataContext, faces: RawF
       // A locally subsetted file only contains the requested glyphs, and browsers do not
       // fall through to another face of the same family for a glyph the matched face is
       // missing, so the face has to declare what it can render.
-      unicodeRange: unicodeRange ?? (subsetted && glyphs ? glyphsToUnicodeRange(glyphs) : undefined),
+      unicodeRange: unicodeRange ?? (subsetted && glyphs
+        ? glyphsToUnicodeRange(glyphs)
+        : undefined),
       // An axis pinned in the file itself no longer exists to be varied.
       variationSettings: subsetted && variationAxes && requested
         ? withoutVariationSettings(face.variationSettings, requested.pinned)

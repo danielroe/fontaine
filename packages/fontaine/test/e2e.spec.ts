@@ -7,7 +7,9 @@ import { describe, expect, it } from 'vitest'
 describe('fontaine', () => {
   it('e2e', async () => {
     const assetsDir = fileURLToPath(new URL('../playground/dist/assets', import.meta.url))
-    await build({ root: fileURLToPath(new URL('../playground', import.meta.url)) })
+    await build({
+      root: fileURLToPath(new URL('../playground', import.meta.url)),
+    })
     const cssFile = await readdir(assetsDir).then(files =>
       files.find(f => f.endsWith('.css')),
     )

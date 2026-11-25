@@ -70,11 +70,20 @@ export interface FontFamilyUsage {
  */
 function findMeasuredFace(font: NormalizedFontFaceData, fonts: NormalizedFontFaceData[]): NormalizedFontFaceData {
   // A manually configured `unicode-range` may be a single comma-separated string.
-  const coversLatin = (face: NormalizedFontFaceData) => coversBasicLatin({ ...face, unicodeRange: face.unicodeRange?.flatMap(range => range.split(',')) })
-  const rank = (face: NormalizedFontFaceData) => (coversLatin(face) ? 0 : 2) + (!face.style || face.style === 'normal' ? 0 : 1)
+  const coversLatin = (face: NormalizedFontFaceData) => coversBasicLatin({
+    ...face,
+    unicodeRange: face.unicodeRange?.flatMap(range => range.split(',')),
+  })
+  const rank = (face: NormalizedFontFaceData) => (coversLatin(face)
+    ? 0
+    : 2) + (!face.style || face.style === 'normal'
+    ? 0
+    : 1)
   return fonts
     .filter(face => String(face.weight) === String(font.weight) && face.stretch === font.stretch)
-    .reduce((best, face) => rank(face) < rank(best) ? face : best, font)
+    .reduce((best, face) => rank(face) < rank(best)
+      ? face
+      : best, font)
 }
 
 function findSafeInsertionIndex(ast: CssNode): number {
@@ -177,7 +186,12 @@ export async function transformCSS(options: FontFamilyInjectionPluginOptions, co
     }) || {}
 
     if (!result.fonts || result.fonts.length === 0) {
-      usages.push({ fontFamily, resolved: false, fallbacks: [], preloads: [] })
+      usages.push({
+        fontFamily,
+        resolved: false,
+        fallbacks: [],
+        preloads: [],
+      })
       return
     }
 
@@ -186,7 +200,9 @@ export async function transformCSS(options: FontFamilyInjectionPluginOptions, co
     const fallbacksOnly = result.fallbacksOnly || options.globalFamilies?.has(fontFamily)
 
     result.fonts.sort((a, b) => (a.meta?.priority || 0) - (b.meta?.priority || 0))
-    const fontsToPreload = fallbacksOnly ? [] : (options.selectFontsToPreload?.(fontFamily, result.fonts) ?? [])
+    const fontsToPreload = fallbacksOnly
+      ? []
+      : (options.selectFontsToPreload?.(fontFamily, result.fonts) ?? [])
     const preloads: string[] = []
     for (const font of fontsToPreload) {
       const fontToPreload = font.src.find((s): s is RemoteFontSource => 'url' in s)?.url
@@ -218,7 +234,12 @@ export async function transformCSS(options: FontFamilyInjectionPluginOptions, co
         : await generateFontFallbacks(fontFamily, { ...font, unicodeRange }, missingFallbacks, fallbackFaceOptions)
       const declarations = fallbacksOnly
         ? missingFallbackDeclarations
-        : [generateFontFace(fontFamily, opts.relative ? relativiseFontSources(font, dirname(id).replace(/^\/?/, '/')) : font), ...missingFallbackDeclarations]
+        : [
+            generateFontFace(fontFamily, opts.relative
+              ? relativiseFontSources(font, dirname(id).replace(/^\/?/, '/'))
+              : font),
+            ...missingFallbackDeclarations,
+          ]
 
       for (const declaration of declarations) {
         if (!injectedDeclarations.has(declaration)) {
@@ -236,7 +257,9 @@ export async function transformCSS(options: FontFamilyInjectionPluginOptions, co
     usages.push({
       fontFamily,
       resolved: true,
-      fallbacks: insertFontFamilies ? fallbackMap.map(f => f.font) : [],
+      fallbacks: insertFontFamilies
+        ? fallbackMap.map(f => f.font)
+        : [],
       preloads,
     })
 

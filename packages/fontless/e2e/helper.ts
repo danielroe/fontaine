@@ -64,7 +64,12 @@ export function runCli(options: { command: string, label?: string } & SpawnOptio
 
   function kill(): void {
     if (process.platform === 'win32') {
-      spawn('taskkill', ['/pid', String(child.pid), '/t', '/f'])
+      spawn('taskkill', [
+        '/pid',
+        String(child.pid),
+        '/t',
+        '/f',
+      ])
     }
     else {
       child.kill()

@@ -15,5 +15,10 @@ export default defineConfig({
   ],
   workers: 1,
   forbidOnly: !!process.env.CI,
-  reporter: process.env.CI ? [['list'], ['github']] : 'list',
+  reporter: process.env.CI
+    ? [
+        ['list'],
+        ['github'],
+      ]
+    : 'list',
 }) as any

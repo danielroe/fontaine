@@ -25,11 +25,18 @@ async function createWorkspace() {
   await fsp.mkdir(root)
   await fsp.writeFile(join(root, 'index.html'), html)
   await fsp.writeFile(join(root, 'style.css'), `body { font-family: 'Inter' }`)
-  await fsp.writeFile(join(root, 'package.json'), JSON.stringify({ name: 'app', dependencies: { '@fontsource/inter': '^5.0.0' } }))
+  await fsp.writeFile(join(root, 'package.json'), JSON.stringify({
+    name: 'app',
+    dependencies: { '@fontsource/inter': '^5.0.0' },
+  }))
 
   const pkgDir = join(workspace, 'node_modules/@fontsource/inter')
   await fsp.mkdir(join(pkgDir, 'files'), { recursive: true })
-  await fsp.writeFile(join(pkgDir, 'package.json'), JSON.stringify({ name: '@fontsource/inter', version: '5.0.0', exports: { './*': './*' } }))
+  await fsp.writeFile(join(pkgDir, 'package.json'), JSON.stringify({
+    name: '@fontsource/inter',
+    version: '5.0.0',
+    exports: { './*': './*' },
+  }))
   await fsp.writeFile(join(pkgDir, 'index.css'), `@font-face { font-family: 'Inter'; font-style: normal; font-weight: 400; src: url(./files/inter-latin-400-normal.woff2?v=1) format('woff2'); }`)
   await fsp.writeFile(join(pkgDir, 'files/inter-latin-400-normal.woff2'), 'local-font-bytes')
 
@@ -44,7 +51,9 @@ it('should emit fonts from a locally installed package', async () => {
     root,
     configFile: false,
     logLevel: 'silent',
-    plugins: [fontless({ provider: 'npm' })],
+    plugins: [
+      fontless({ provider: 'npm' }),
+    ],
     build: { outDir, emptyOutDir: true },
   })
 
@@ -62,7 +71,9 @@ it('should serve fonts from a locally installed package during dev', async () =>
     configFile: false,
     logLevel: 'silent',
     server: { host: '127.0.0.1', port: 0 },
-    plugins: [fontless({ provider: 'npm' })],
+    plugins: [
+      fontless({ provider: 'npm' }),
+    ],
   })
 
   try {

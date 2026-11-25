@@ -18,14 +18,18 @@ export function coversBasicLatin(font: FontFaceData): boolean {
       return false
     }
     const start = Number.parseInt(match[1]!.replaceAll('?', '0'), 16)
-    const end = match[2] ? Number.parseInt(match[2], 16) : Number.parseInt(match[1]!.replaceAll('?', 'f'), 16)
+    const end = match[2]
+      ? Number.parseInt(match[2], 16)
+      : Number.parseInt(match[1]!.replaceAll('?', 'f'), 16)
     return start <= REPRESENTATIVE_CODE_POINT && REPRESENTATIVE_CODE_POINT <= end
   })
 }
 
 function weightValues(font: FontFaceData): number[] {
   const weight = font.weight ?? PREFERRED_WEIGHT
-  return (Array.isArray(weight) ? weight : String(weight).split(' '))
+  return (Array.isArray(weight)
+    ? weight
+    : String(weight).split(' '))
     .map(value => Number(value))
     .filter(value => !Number.isNaN(value))
 }
@@ -42,21 +46,31 @@ function matchesWeight(font: FontFaceData, weights: Array<string | number>): boo
 }
 
 function subsetRank(font: FontFaceData, subsets: string[] | undefined): number {
-  const latinRank = coversBasicLatin(font) ? 0 : 1
+  const latinRank = coversBasicLatin(font)
+    ? 0
+    : 1
   if (!subsets) {
     return latinRank
   }
-  const index = font.meta?.subset ? subsets.indexOf(font.meta.subset) : -1
-  return index === -1 ? subsets.length + latinRank : index
+  const index = font.meta?.subset
+    ? subsets.indexOf(font.meta.subset)
+    : -1
+  return index === -1
+    ? subsets.length + latinRank
+    : index
 }
 
 function weightRank(font: FontFaceData): number {
   const distances = weightValues(font).map(value => Math.abs(value - PREFERRED_WEIGHT))
-  return distances.length > 0 ? Math.min(...distances) : PREFERRED_WEIGHT
+  return distances.length > 0
+    ? Math.min(...distances)
+    : PREFERRED_WEIGHT
 }
 
 function styleRank(font: FontFaceData): number {
-  return !font.style || font.style === 'normal' ? 0 : 1
+  return !font.style || font.style === 'normal'
+    ? 0
+    : 1
 }
 
 /** Negative where `a` is the better single preload for a family. */
@@ -88,7 +102,11 @@ export function selectPreloadFonts(fontFamily: string, fonts: FontFaceData[], pr
 
   if (preload === true) {
     return fonts.length > 0
-      ? [fonts.reduce((best, font) => compareFaces(font, best, subsets) < 0 ? font : best)]
+      ? [
+          fonts.reduce((best, font) => compareFaces(font, best, subsets) < 0
+            ? font
+            : best),
+        ]
       : []
   }
 

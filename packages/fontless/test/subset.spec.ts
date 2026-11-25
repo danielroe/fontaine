@@ -33,7 +33,13 @@ async function createFixture(styles: string) {
 }
 
 function manualFamily(name: string, glyphs?: string | string[]) {
-  return { name, src: [{ url: pathToFileURL(fixture).href, format: 'woff2' }], glyphs }
+  return {
+    name,
+    src: [
+      { url: pathToFileURL(fixture).href, format: 'woff2' },
+    ],
+    glyphs,
+  }
 }
 
 async function buildApp(root: string, options: FontlessOptions, config: InlineConfig = {}) {
@@ -45,7 +51,9 @@ async function buildApp(root: string, options: FontlessOptions, config: InlineCo
     root,
     configFile: false,
     logLevel: 'silent',
-    plugins: [fontless(options)],
+    plugins: [
+      fontless(options),
+    ],
     build: { outDir, emptyOutDir: true },
   })
 
@@ -64,7 +72,9 @@ async function serveFont(root: string, options: FontlessOptions) {
     configFile: false,
     logLevel: 'silent',
     server: { host: '127.0.0.1', port: 0 },
-    plugins: [fontless(options)],
+    plugins: [
+      fontless(options),
+    ],
   })
 
   try {
@@ -117,21 +127,59 @@ describe('normalizeGlyphs', () => {
 describe('mergeUnicodeRanges', () => {
   it('should merge overlapping and adjacent ranges across faces', () => {
     expect(mergeUnicodeRanges([
-      { unicodeRange: ['U+0400-045F', 'U+0131', 'U+2013'] },
-      { unicodeRange: ['U+0000-00FF'] },
-      { unicodeRange: ['U+0100-0130', 'u+00e?', 'U+0500-0510', 'U+0505'] },
-    ])).toEqual(['U+0000-0131', 'U+0400-045F', 'U+0500-0510', 'U+2013'])
+      {
+        unicodeRange: ['U+0400-045F', 'U+0131', 'U+2013'],
+      },
+      {
+        unicodeRange: ['U+0000-00FF'],
+      },
+      {
+        unicodeRange: [
+          'U+0100-0130',
+          'u+00e?',
+          'U+0500-0510',
+          'U+0505',
+        ],
+      },
+    ])).toEqual([
+      'U+0000-0131',
+      'U+0400-045F',
+      'U+0500-0510',
+      'U+2013',
+    ])
   })
 
   it('should read comma-separated entries', () => {
-    expect(mergeUnicodeRanges([{ unicodeRange: ['U+0041, U+0043,U+0042'] }])).toEqual(['U+0041-0043'])
+    expect(mergeUnicodeRanges([
+      {
+        unicodeRange: ['U+0041, U+0043,U+0042'],
+      },
+    ])).toEqual(['U+0041-0043'])
   })
 
   it('should not restrict faces that cover every codepoint', () => {
-    expect(mergeUnicodeRanges([{ unicodeRange: ['U+0000-00FF'] }, {}])).toBeUndefined()
-    expect(mergeUnicodeRanges([{ unicodeRange: ['U+0000-00FF'] }, { unicodeRange: [] }])).toBeUndefined()
-    expect(mergeUnicodeRanges([{ unicodeRange: ['U+0000-00FF', 'latin'] }])).toBeUndefined()
-    expect(mergeUnicodeRanges([{ unicodeRange: ['U+00FF-0000'] }])).toBeUndefined()
+    expect(mergeUnicodeRanges([
+      {
+        unicodeRange: ['U+0000-00FF'],
+      },
+      {},
+    ])).toBeUndefined()
+    expect(mergeUnicodeRanges([
+      {
+        unicodeRange: ['U+0000-00FF'],
+      },
+      { unicodeRange: [] },
+    ])).toBeUndefined()
+    expect(mergeUnicodeRanges([
+      {
+        unicodeRange: ['U+0000-00FF', 'latin'],
+      },
+    ])).toBeUndefined()
+    expect(mergeUnicodeRanges([
+      {
+        unicodeRange: ['U+00FF-0000'],
+      },
+    ])).toBeUndefined()
   })
 })
 
@@ -161,14 +209,22 @@ describe('subsetFontData', () => {
 describe('glyph subsetting', () => {
   it('should emit the font untouched when no glyphs are configured', { timeout: 20_000 }, async () => {
     const root = await createFixture(`body { font-family: 'Inter' }`)
-    const { fonts } = await buildApp(root, { families: [manualFamily('Inter')] })
+    const { fonts } = await buildApp(root, {
+      families: [
+        manualFamily('Inter'),
+      ],
+    })
 
     expect(fonts[0]).toEqual(await fsp.readFile(fixture))
   })
 
   it('should emit a smaller, still parseable font when glyphs are configured', { timeout: 20_000 }, async () => {
     const root = await createFixture(`body { font-family: 'Inter' }`)
-    const { fonts } = await buildApp(root, { families: [manualFamily('Inter', 'Hand')] })
+    const { fonts } = await buildApp(root, {
+      families: [
+        manualFamily('Inter', 'Hand'),
+      ],
+    })
     const [font] = fonts as [Buffer]
 
     expect(font.length).toBeLessThan((await fsp.readFile(fixture)).length)
@@ -179,32 +235,59 @@ describe('glyph subsetting', () => {
 
   it('should accept glyphs as a list of characters, and as a default for every family', { timeout: 20_000 }, async () => {
     const root = await createFixture(`body { font-family: 'Inter' }`)
-    const fromList = await buildApp(root, { families: [manualFamily('Inter', ['H', 'a', 'n', 'd'])] })
-    const fromDefaults = await buildApp(root, { defaults: { glyphs: 'Hand' }, families: [manualFamily('Inter')] })
+    const fromList = await buildApp(root, {
+      families: [
+        manualFamily('Inter', ['H', 'a', 'n', 'd']),
+      ],
+    })
+    const fromDefaults = await buildApp(root, {
+      defaults: { glyphs: 'Hand' },
+      families: [
+        manualFamily('Inter'),
+      ],
+    })
 
     expect(fromDefaults.fonts[0]).toEqual(fromList.fonts[0])
   })
 
   it('should accept glyphs as unicode ranges', { timeout: 20_000 }, async () => {
     const root = await createFixture(`body { font-family: 'Inter' }`)
-    const fromRange = await buildApp(root, { families: [manualFamily('Inter', 'U+0048,U+0061,U+006E,U+0064')] })
-    const fromCharacters = await buildApp(root, { families: [manualFamily('Inter', 'Hand')] })
+    const fromRange = await buildApp(root, {
+      families: [
+        manualFamily('Inter', 'U+0048,U+0061,U+006E,U+0064'),
+      ],
+    })
+    const fromCharacters = await buildApp(root, {
+      families: [
+        manualFamily('Inter', 'Hand'),
+      ],
+    })
 
     expect(fromRange.fonts[0]).toEqual(fromCharacters.fonts[0])
   })
 
   it('should emit a face untouched when glyphs cover its whole unicode range', { timeout: 20_000 }, async () => {
     const root = await createFixture(`body { font-family: 'Inter' }`)
-    const family = { ...manualFamily('Inter', 'Handgloves'), unicodeRange: ['U+0048', 'U+0061', 'U+0064', 'U+006E'] }
-    const { fonts } = await buildApp(root, { families: [family] })
+    const family = {
+      ...manualFamily('Inter', 'Handgloves'),
+      unicodeRange: ['U+0048', 'U+0061', 'U+0064', 'U+006E'],
+    }
+    const { fonts } = await buildApp(root, {
+      families: [family],
+    })
 
     expect(fonts[0]).toEqual(await fsp.readFile(fixture))
   })
 
   it('should subset a face when glyphs cover only part of its unicode range', { timeout: 20_000 }, async () => {
     const root = await createFixture(`body { font-family: 'Inter' }`)
-    const family = { ...manualFamily('Inter', 'Handgloves'), unicodeRange: ['U+0048', 'U+0061', 'U+0062'] }
-    const { fonts } = await buildApp(root, { families: [family] })
+    const family = {
+      ...manualFamily('Inter', 'Handgloves'),
+      unicodeRange: ['U+0048', 'U+0061', 'U+0062'],
+    }
+    const { fonts } = await buildApp(root, {
+      families: [family],
+    })
 
     expect(fonts[0]!.length).toBeLessThan((await fsp.readFile(fixture)).length)
   })
@@ -212,7 +295,10 @@ describe('glyph subsetting', () => {
   it('should emit one file per glyph list for the same source font', { timeout: 20_000 }, async () => {
     const root = await createFixture(`h1 { font-family: 'Inter' } p { font-family: 'Erode' }`)
     const { files, fonts } = await buildApp(root, {
-      families: [manualFamily('Inter', 'Hand'), manualFamily('Erode', 'Handgloves')],
+      families: [
+        manualFamily('Inter', 'Hand'),
+        manualFamily('Erode', 'Handgloves'),
+      ],
     })
 
     expect(files).toHaveLength(2)
@@ -229,7 +315,15 @@ describe('glyph subsetting', () => {
       const root = await createFixture(`body { font-family: 'Inter' }`)
       const { fonts } = await buildApp(root, {
         cache: false,
-        families: [{ name: 'Inter', src: [{ url: `http://127.0.0.1:${port}/font.woff2`, format: 'woff2' }], glyphs: 'Hand' }],
+        families: [
+          {
+            name: 'Inter',
+            src: [
+              { url: `http://127.0.0.1:${port}/font.woff2`, format: 'woff2' },
+            ],
+            glyphs: 'Hand',
+          },
+        ],
       })
 
       expect(fonts[0]!.length).toBeLessThan(font.length)
@@ -241,11 +335,23 @@ describe('glyph subsetting', () => {
 
   it('should reuse the cached subset of a local font', { timeout: 20_000 }, async () => {
     const root = await createFixture(`body { font-family: 'Inter' }`)
-    const cache = createStorage({ driver: memoryDriver() })
-    await buildApp(root, { cache, families: [manualFamily('Inter', 'Hand')] })
+    const cache = createStorage({
+      driver: memoryDriver(),
+    })
+    await buildApp(root, {
+      cache,
+      families: [
+        manualFamily('Inter', 'Hand'),
+      ],
+    })
     const keys = await subsetKeys(cache)
     await cache.setItemRaw(keys[0]!, Buffer.from('cached'))
-    const { fonts } = await buildApp(root, { cache, families: [manualFamily('Inter', 'Hand')] })
+    const { fonts } = await buildApp(root, {
+      cache,
+      families: [
+        manualFamily('Inter', 'Hand'),
+      ],
+    })
 
     expect(keys).toHaveLength(1)
     expect(fonts[0]).toEqual(Buffer.from('cached'))
@@ -254,14 +360,32 @@ describe('glyph subsetting', () => {
   it('should subset a local font again when its contents change', { timeout: 20_000 }, async () => {
     const root = await createFixture(`body { font-family: 'Inter' }`)
     const source = join(root, 'font.woff2')
-    const family = () => ({ name: 'Inter', src: [{ url: pathToFileURL(source).href, format: 'woff2' }], glyphs: 'Hand' })
-    const cache = createStorage({ driver: memoryDriver() })
-    const first = await buildApp(root, { cache, families: [family()] })
+    const family = () => ({
+      name: 'Inter',
+      src: [
+        { url: pathToFileURL(source).href, format: 'woff2' },
+      ],
+      glyphs: 'Hand',
+    })
+    const cache = createStorage({
+      driver: memoryDriver(),
+    })
+    const first = await buildApp(root, {
+      cache,
+      families: [
+        family(),
+      ],
+    })
     for (const key of await subsetKeys(cache)) {
       await cache.setItemRaw(key, Buffer.from('cached'))
     }
     await fsp.writeFile(source, first.fonts[0]!)
-    const { fonts } = await buildApp(root, { cache, families: [family()] })
+    const { fonts } = await buildApp(root, {
+      cache,
+      families: [
+        family(),
+      ],
+    })
 
     expect(fonts[0]!.subarray(0, 4).toString()).toBe('wOF2')
     expect(await subsetKeys(cache)).toHaveLength(2)
@@ -269,12 +393,24 @@ describe('glyph subsetting', () => {
 
   it('should subset a local font again when its glyphs change', { timeout: 20_000 }, async () => {
     const root = await createFixture(`body { font-family: 'Inter' }`)
-    const cache = createStorage({ driver: memoryDriver() })
-    await buildApp(root, { cache, families: [manualFamily('Inter', 'Hand')] })
+    const cache = createStorage({
+      driver: memoryDriver(),
+    })
+    await buildApp(root, {
+      cache,
+      families: [
+        manualFamily('Inter', 'Hand'),
+      ],
+    })
     for (const key of await subsetKeys(cache)) {
       await cache.setItemRaw(key, Buffer.from('cached'))
     }
-    const { fonts } = await buildApp(root, { cache, families: [manualFamily('Inter', 'Handgloves')] })
+    const { fonts } = await buildApp(root, {
+      cache,
+      families: [
+        manualFamily('Inter', 'Handgloves'),
+      ],
+    })
 
     expect(fonts[0]!.subarray(0, 4).toString()).toBe('wOF2')
     expect(await subsetKeys(cache)).toHaveLength(2)
@@ -284,15 +420,33 @@ describe('glyph subsetting', () => {
     const root = await createFixture(`body { font-family: 'Inter' }`)
     const source = join(root, 'broken.woff2')
     await fsp.writeFile(source, 'not-really-a-font')
-    const cache = createStorage({ driver: memoryDriver() })
-    await buildApp(root, { cache, families: [{ name: 'Inter', src: [{ url: pathToFileURL(source).href, format: 'woff2' }], glyphs: 'Hand' }] })
+    const cache = createStorage({
+      driver: memoryDriver(),
+    })
+    await buildApp(root, {
+      cache,
+      families: [
+        {
+          name: 'Inter',
+          src: [
+            { url: pathToFileURL(source).href, format: 'woff2' },
+          ],
+          glyphs: 'Hand',
+        },
+      ],
+    })
 
     expect(await subsetKeys(cache)).toEqual([])
   })
 
   it('should subset local fonts with the cache disabled', { timeout: 20_000 }, async () => {
     const root = await createFixture(`body { font-family: 'Inter' }`)
-    const { fonts } = await buildApp(root, { cache: false, families: [manualFamily('Inter', 'Hand')] })
+    const { fonts } = await buildApp(root, {
+      cache: false,
+      families: [
+        manualFamily('Inter', 'Hand'),
+      ],
+    })
 
     expect(fonts[0]!.length).toBeLessThan((await fsp.readFile(fixture)).length)
     expect((await fsp.readdir(root)).sort()).toEqual(['font.woff2', 'index.html', 'style.css'])
@@ -300,8 +454,16 @@ describe('glyph subsetting', () => {
 
   it('should serve subsetted bytes from the dev middleware', { timeout: 20_000 }, async () => {
     const root = await createFixture(`body { font-family: 'Inter' }`)
-    const subsetted = await serveFont(root, { families: [manualFamily('Inter', 'Hand')] })
-    const untouched = await serveFont(root, { families: [manualFamily('Inter')] })
+    const subsetted = await serveFont(root, {
+      families: [
+        manualFamily('Inter', 'Hand'),
+      ],
+    })
+    const untouched = await serveFont(root, {
+      families: [
+        manualFamily('Inter'),
+      ],
+    })
 
     expect(subsetted.length).toBeLessThan(untouched.length)
     expect(untouched).toEqual(await fsp.readFile(fixture))

@@ -14,12 +14,60 @@ import { transformCSS } from '../src/utils'
 
 // Google's return order for Barlow with the default subsets and styles
 const barlow: FontFaceData[] = [
-  { src: [{ url: '/vietnamese-italic.woff2' }], style: 'italic', weight: 400, unicodeRange: ['U+0102-0103', 'U+1EA0-1EF9'], meta: { priority: 0, subset: 'vietnamese' } },
-  { src: [{ url: '/latin-ext-italic.woff2' }], style: 'italic', weight: 400, unicodeRange: ['U+0100-02BA'], meta: { priority: 0, subset: 'latin-ext' } },
-  { src: [{ url: '/latin-italic.woff2' }], style: 'italic', weight: 400, unicodeRange: ['U+0000-00FF', 'U+0131'], meta: { priority: 0, subset: 'latin' } },
-  { src: [{ url: '/vietnamese.woff2' }], style: 'normal', weight: 400, unicodeRange: ['U+0102-0103', 'U+1EA0-1EF9'], meta: { priority: 0, subset: 'vietnamese' } },
-  { src: [{ url: '/latin-ext.woff2' }], style: 'normal', weight: 400, unicodeRange: ['U+0100-02BA'], meta: { priority: 0, subset: 'latin-ext' } },
-  { src: [{ url: '/latin.woff2' }], style: 'normal', weight: 400, unicodeRange: ['U+0000-00FF', 'U+0131'], meta: { priority: 0, subset: 'latin' } },
+  {
+    src: [
+      { url: '/vietnamese-italic.woff2' },
+    ],
+    style: 'italic',
+    weight: 400,
+    unicodeRange: ['U+0102-0103', 'U+1EA0-1EF9'],
+    meta: { priority: 0, subset: 'vietnamese' },
+  },
+  {
+    src: [
+      { url: '/latin-ext-italic.woff2' },
+    ],
+    style: 'italic',
+    weight: 400,
+    unicodeRange: ['U+0100-02BA'],
+    meta: { priority: 0, subset: 'latin-ext' },
+  },
+  {
+    src: [
+      { url: '/latin-italic.woff2' },
+    ],
+    style: 'italic',
+    weight: 400,
+    unicodeRange: ['U+0000-00FF', 'U+0131'],
+    meta: { priority: 0, subset: 'latin' },
+  },
+  {
+    src: [
+      { url: '/vietnamese.woff2' },
+    ],
+    style: 'normal',
+    weight: 400,
+    unicodeRange: ['U+0102-0103', 'U+1EA0-1EF9'],
+    meta: { priority: 0, subset: 'vietnamese' },
+  },
+  {
+    src: [
+      { url: '/latin-ext.woff2' },
+    ],
+    style: 'normal',
+    weight: 400,
+    unicodeRange: ['U+0100-02BA'],
+    meta: { priority: 0, subset: 'latin-ext' },
+  },
+  {
+    src: [
+      { url: '/latin.woff2' },
+    ],
+    style: 'normal',
+    weight: 400,
+    unicodeRange: ['U+0000-00FF', 'U+0131'],
+    meta: { priority: 0, subset: 'latin' },
+  },
 ]
 
 function urls(fonts: FontFaceData[]) {
@@ -41,17 +89,50 @@ describe('selectPreloadFonts', () => {
     expect(urls(selectPreloadFonts('Barlow', barlow, true, ['vietnamese', 'latin']))).toEqual(['/vietnamese.woff2'])
     expect(urls(selectPreloadFonts('Barlow', barlow, true, ['cyrillic']))).toEqual(['/latin.woff2'])
 
-    const unsubsetted: FontFaceData[] = [{ src: [{ url: '/all.woff2' }] }, ...barlow]
+    const unsubsetted: FontFaceData[] = [
+      {
+        src: [
+          { url: '/all.woff2' },
+        ],
+      },
+      ...barlow,
+    ]
     expect(urls(selectPreloadFonts('Barlow', unsubsetted, true, ['latin']))).toEqual(['/latin.woff2'])
   })
 
   it('prefers lower priority, then the weight closest to 400, with `preload: true`', () => {
     const fonts: FontFaceData[] = [
-      { src: [{ url: '/fallback.woff2' }], weight: 400, meta: { priority: 1 } },
-      { src: [{ url: '/700.woff2' }], weight: 700 },
-      { src: [{ url: '/variable.woff2' }], weight: [300, 800] },
-      { src: [{ url: '/300.woff2' }], weight: '300' },
-      { src: [{ url: '/bold.woff2' }], weight: 'bold' },
+      {
+        src: [
+          { url: '/fallback.woff2' },
+        ],
+        weight: 400,
+        meta: { priority: 1 },
+      },
+      {
+        src: [
+          { url: '/700.woff2' },
+        ],
+        weight: 700,
+      },
+      {
+        src: [
+          { url: '/variable.woff2' },
+        ],
+        weight: [300, 800],
+      },
+      {
+        src: [
+          { url: '/300.woff2' },
+        ],
+        weight: '300',
+      },
+      {
+        src: [
+          { url: '/bold.woff2' },
+        ],
+        weight: 'bold',
+      },
     ]
     expect(urls(selectPreloadFonts('Barlow', fonts, true))).toEqual(['/variable.woff2'])
     expect(urls(selectPreloadFonts('Barlow', fonts.filter(f => !Array.isArray(f.weight)), true))).toEqual(['/300.woff2'])
@@ -59,8 +140,18 @@ describe('selectPreloadFonts', () => {
 
   it('falls back to the first face when no unicode range covers basic latin', () => {
     const fonts: FontFaceData[] = [
-      { src: [{ url: '/symbols.woff2' }], unicodeRange: ['U+1F600-1F64F', 'not-a-range'] },
-      { src: [{ url: '/wildcard.woff2' }], unicodeRange: ['U+00??'] },
+      {
+        src: [
+          { url: '/symbols.woff2' },
+        ],
+        unicodeRange: ['U+1F600-1F64F', 'not-a-range'],
+      },
+      {
+        src: [
+          { url: '/wildcard.woff2' },
+        ],
+        unicodeRange: ['U+00??'],
+      },
     ]
     expect(urls(selectPreloadFonts('Barlow', fonts, true))).toEqual(['/wildcard.woff2'])
   })
@@ -71,32 +162,77 @@ describe('selectPreloadFonts', () => {
   })
 
   it('filters faces by subsets, styles and weights', () => {
-    expect(urls(selectPreloadFonts('Barlow', barlow, { subsets: ['latin'] })))
+    expect(urls(selectPreloadFonts('Barlow', barlow, {
+      subsets: ['latin'],
+    })))
       .toEqual(['/latin-italic.woff2', '/latin.woff2'])
-    expect(urls(selectPreloadFonts('Barlow', barlow, { subsets: ['latin'], styles: ['normal'] })))
+    expect(urls(selectPreloadFonts('Barlow', barlow, {
+      subsets: ['latin'],
+      styles: ['normal'],
+    })))
       .toEqual(['/latin.woff2'])
-    expect(urls(selectPreloadFonts('Barlow', barlow, { styles: ['normal'], weights: [400] })))
+    expect(urls(selectPreloadFonts('Barlow', barlow, {
+      styles: ['normal'],
+      weights: [400],
+    })))
       .toEqual(['/vietnamese.woff2', '/latin-ext.woff2', '/latin.woff2'])
-    expect(urls(selectPreloadFonts('Barlow', barlow, { weights: [700] }))).toEqual([])
+    expect(urls(selectPreloadFonts('Barlow', barlow, {
+      weights: [700],
+    }))).toEqual([])
   })
 
   it('matches weights against variable ranges and non-numeric weights', () => {
     const fonts: FontFaceData[] = [
-      { src: [{ url: '/variable.woff2' }], weight: [300, 800] },
-      { src: [{ url: '/bold.woff2' }], weight: 'bold' },
-      { src: [{ url: '/default.woff2' }] },
+      {
+        src: [
+          { url: '/variable.woff2' },
+        ],
+        weight: [300, 800],
+      },
+      {
+        src: [
+          { url: '/bold.woff2' },
+        ],
+        weight: 'bold',
+      },
+      {
+        src: [
+          { url: '/default.woff2' },
+        ],
+      },
     ]
-    expect(urls(selectPreloadFonts('Barlow', fonts, { weights: [700] }))).toEqual(['/variable.woff2'])
-    expect(urls(selectPreloadFonts('Barlow', fonts, { weights: ['bold'] }))).toEqual(['/bold.woff2'])
-    expect(urls(selectPreloadFonts('Barlow', fonts, { weights: [400] }))).toEqual(['/variable.woff2', '/default.woff2'])
+    expect(urls(selectPreloadFonts('Barlow', fonts, {
+      weights: [700],
+    }))).toEqual(['/variable.woff2'])
+    expect(urls(selectPreloadFonts('Barlow', fonts, {
+      weights: ['bold'],
+    }))).toEqual(['/bold.woff2'])
+    expect(urls(selectPreloadFonts('Barlow', fonts, {
+      weights: [400],
+    }))).toEqual(['/variable.woff2', '/default.woff2'])
   })
 })
 
 describe('transformCSS preload selection', () => {
   const fonts = [
-    { src: [{ url: '/font-latin.woff2', format: 'woff2' }], meta: { priority: 1, subset: 'latin' } },
-    { src: [{ url: '/font-greek.woff2', format: 'woff2' }], meta: { priority: 1, subset: 'greek' } },
-    { src: [{ url: '/font-top.woff2', format: 'woff2' }], meta: { priority: 0 } },
+    {
+      src: [
+        { url: '/font-latin.woff2', format: 'woff2' },
+      ],
+      meta: { priority: 1, subset: 'latin' },
+    },
+    {
+      src: [
+        { url: '/font-greek.woff2', format: 'woff2' },
+      ],
+      meta: { priority: 1, subset: 'greek' },
+    },
+    {
+      src: [
+        { url: '/font-top.woff2', format: 'woff2' },
+      ],
+      meta: { priority: 0 },
+    },
   ]
 
   async function transform(options: Partial<FontFamilyInjectionPluginOptions>) {
@@ -107,7 +243,9 @@ describe('transformCSS preload selection', () => {
       resolveFontFace: () => ({ fonts }),
       ...options,
     }, `:root { font-family: 'Poppins' }`, 'some-id')
-    return [...fontsToPreload.get('some-id') || []]
+    return [
+      ...fontsToPreload.get('some-id') || [],
+    ]
   }
 
   it('preloads nothing by default', async () => {
@@ -122,7 +260,9 @@ describe('transformCSS preload selection', () => {
         return fonts.filter(f => f.meta?.subset === 'greek')
       },
     })
-    expect(received).toEqual([['top', 'latin', 'greek']])
+    expect(received).toEqual([
+      ['top', 'latin', 'greek'],
+    ])
     expect(urls).toEqual(['/font-greek.woff2'])
   })
 })
@@ -144,42 +284,82 @@ describe('preload option', () => {
       root,
       configFile: false,
       logLevel: 'silent',
-      plugins: [fontless(fontlessOptions)],
+      plugins: [
+        fontless(fontlessOptions),
+      ],
       build: { ...config.build, outDir, emptyOutDir: true },
     })
 
     const files = await Array.fromAsync(fsp.glob('**/*', { cwd: outDir }))
     const html = await readFile(join(outDir, files.find(file => file.endsWith('.html'))!), 'utf-8')
-    return [...html.matchAll(/rel="preload" as="font" href="([^"]+)"/g)].map(([, url]) => url!)
+    return [
+      ...html.matchAll(/rel="preload" as="font" href="([^"]+)"/g),
+    ].map(([, url]) => url!)
   }
 
   it('adds no preload links by default', { timeout: 20_000 }, async () => {
-    expect(await buildApp({ families: [{ name: 'Poppins' }] })).toEqual([])
+    expect(await buildApp({
+      families: [
+        { name: 'Poppins' },
+      ],
+    })).toEqual([])
   })
 
   it('preloads a single font with `preload: true`', { timeout: 20_000 }, async () => {
-    const byDefault = await buildApp({ families: [{ name: 'Poppins', preload: true }] })
+    const byDefault = await buildApp({
+      families: [
+        { name: 'Poppins', preload: true },
+      ],
+    })
     expect(byDefault).toHaveLength(1)
 
     const latinOnly = await buildApp({
-      families: [{ name: 'Poppins', preload: true, subsets: ['latin'] }],
-      defaults: { styles: ['normal'] },
+      families: [
+        {
+          name: 'Poppins',
+          preload: true,
+          subsets: ['latin'],
+        },
+      ],
+      defaults: {
+        styles: ['normal'],
+      },
     })
     expect(byDefault).toEqual(latinOnly)
   })
 
   it('preloads fonts matching `preload.subsets`', { timeout: 20_000 }, async () => {
-    const bySubsets = await buildApp({ families: [{ name: 'Poppins', preload: { subsets: ['latin'] } }] })
+    const bySubsets = await buildApp({
+      families: [
+        {
+          name: 'Poppins',
+          preload: {
+            subsets: ['latin'],
+          },
+        },
+      ],
+    })
     expect(bySubsets.length).toBeGreaterThan(0)
 
-    const byFunction = await buildApp({ families: [{ name: 'Poppins', preload: (_family, font) => font.meta?.subset === 'latin' }] })
+    const byFunction = await buildApp({
+      families: [
+        {
+          name: 'Poppins',
+          preload: (_family, font) => font.meta?.subset === 'latin',
+        },
+      ],
+    })
     expect(byFunction).toEqual(bySubsets)
   })
 
   it('respects `defaults.preload` as a fallback for family overrides', { timeout: 20_000 }, async () => {
-    const all = await buildApp({ defaults: { preload: true } })
+    const all = await buildApp({
+      defaults: { preload: true },
+    })
     const withoutPoppins = await buildApp({
-      families: [{ name: 'Poppins', preload: false }],
+      families: [
+        { name: 'Poppins', preload: false },
+      ],
       defaults: { preload: true },
     })
     expect(all.length).toBe(withoutPoppins.length + 1)

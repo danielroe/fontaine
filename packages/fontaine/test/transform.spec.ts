@@ -42,7 +42,16 @@ describe('fontaine transform', () => {
   })
 
   it('should not add fallbacks for generic families or CSS-wide keywords', async () => {
-    for (const value of ['sans-serif', 'monospace', 'system-ui', 'inherit', 'initial', 'unset', 'revert', 'revert-layer']) {
+    for (const value of [
+      'sans-serif',
+      'monospace',
+      'system-ui',
+      'inherit',
+      'initial',
+      'unset',
+      'revert',
+      'revert-layer',
+    ]) {
       expect(await transform(`.foo { font-family: ${value}; }`)).toBeUndefined()
     }
   })
@@ -150,7 +159,9 @@ describe('fontaine transform', () => {
         font-family: 'Unique Font';
         src: url('/fonts/resolve-path.ttf');
       }
-    `, { resolvePath: () => font })
+    `, {
+      resolvePath: () => font,
+    })
     expect(fromFile).toHaveBeenCalledWith(font)
   })
 
@@ -162,7 +173,9 @@ describe('fontaine transform', () => {
         font-family: 'Unique Font';
         src: url('./resolve-path.ttf');
       }
-    `, { resolvePath: id => new URL(id, import.meta.url) })
+    `, {
+      resolvePath: id => new URL(id, import.meta.url),
+    })
     expect(fromFile).toHaveBeenCalledWith(fileURLToPath(new URL('./resolve-path.ttf', import.meta.url)))
 
     // @ts-expect-error not typed as mock
@@ -427,7 +440,9 @@ describe('fontaine transform', () => {
         font-family: 'Unique Font';
         src: url('./unsupported.wasm');
       }
-    `, { resolvePath: id => new URL(id, import.meta.url) })
+    `, {
+      resolvePath: id => new URL(id, import.meta.url),
+    })
     expect(fromFile).not.toHaveBeenCalled()
   })
 
@@ -437,7 +452,9 @@ describe('fontaine transform', () => {
         font-family: Poppins;
         src: url('poppins.ttf');
       }
-    `, { skipFontFaceGeneration: () => true })
+    `, {
+      skipFontFaceGeneration: () => true,
+    })
     expect(result).toBeUndefined()
   })
 
@@ -447,7 +464,9 @@ describe('fontaine transform', () => {
         font-family: Poppins;
         src: url('poppins.ttf');
       }
-    `, { fallbacks: ['Bingle Bob the Unknown Font'] })
+    `, {
+      fallbacks: ['Bingle Bob the Unknown Font'],
+    })
     expect(result).toBeUndefined()
   })
 

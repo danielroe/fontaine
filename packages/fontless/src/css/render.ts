@@ -12,7 +12,9 @@ export function generateFontFace(family: string, font: NormalizedFontFaceData): 
     `  src: ${renderFontSrc(font.src)};`,
     `  font-display: ${font.display || 'swap'};`,
     font.unicodeRange && `  unicode-range: ${font.unicodeRange};`,
-    font.weight && `  font-weight: ${Array.isArray(font.weight) ? font.weight.join(' ') : font.weight};`,
+    font.weight && `  font-weight: ${Array.isArray(font.weight)
+      ? font.weight.join(' ')
+      : font.weight};`,
     font.style && `  font-style: ${font.style};`,
     font.stretch && `  font-stretch: ${font.stretch};`,
     font.featureSettings && `  font-feature-settings: ${font.featureSettings};`,
@@ -38,7 +40,14 @@ interface ProviderFontMetrics {
 
 type FallbackMetrics = Pick<Required<ProviderFontMetrics>, 'ascent' | 'descent' | 'lineGap' | 'unitsPerEm' | 'xWidthAvg'>
 
-const OPTIONAL_METRICS = ['ascent', 'descent', 'lineGap', 'capHeight', 'xHeight', 'xWidthAvg'] as const
+const OPTIONAL_METRICS = [
+  'ascent',
+  'descent',
+  'lineGap',
+  'capHeight',
+  'xHeight',
+  'xWidthAvg',
+] as const
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
@@ -81,8 +90,12 @@ function resolveProviderMetrics(data: NormalizedFontFaceData, knownMetrics: Fall
   if (!metrics) {
     return
   }
-  const scale = knownMetrics ? metrics.unitsPerEm / knownMetrics.unitsPerEm : 0
-  const fill = (key: keyof FallbackMetrics) => knownMetrics ? knownMetrics[key] * scale : undefined
+  const scale = knownMetrics
+    ? metrics.unitsPerEm / knownMetrics.unitsPerEm
+    : 0
+  const fill = (key: keyof FallbackMetrics) => knownMetrics
+    ? knownMetrics[key] * scale
+    : undefined
 
   const ascent = metrics.ascent ?? fill('ascent')
   const descent = metrics.descent ?? fill('descent')
@@ -150,7 +163,9 @@ function parseRange(value: unknown, initial: number): [min: number, max: number]
     return [initial, initial]
   }
   const [min, max = min, ...rest] = String(value).match(NUMBER_RE)?.map(Number) || []
-  return min !== undefined && !rest.length && min <= max! ? [min, max!] : undefined
+  return min !== undefined && !rest.length && min <= max!
+    ? [min, max!]
+    : undefined
 }
 
 function isRange(range: [min: number, max: number] | undefined): boolean {
@@ -167,14 +182,21 @@ interface VariableFontInstance {
   stretch?: number
 }
 
-function selectFallbackInstances(data: NormalizedFontFaceData, instances: FallbackInstance[] = [{ weight: BOLD_WEIGHT }]): VariableFontInstance[] {
+function selectFallbackInstances(data: NormalizedFontFaceData, instances: FallbackInstance[] = [
+  { weight: BOLD_WEIGHT },
+]): VariableFontInstance[] {
   const weights = parseRange(data.weight, REGULAR_WEIGHT)
   const stretches = parseRange(data.stretch, NORMAL_STRETCH)
   if (!isRange(weights) && !isRange(stretches)) {
     return []
   }
   return instances
-    .map(({ weight, stretch }) => ({ weight, stretch: stretch === undefined ? undefined : Number.parseFloat(stretch) }))
+    .map(({ weight, stretch }) => ({
+      weight,
+      stretch: stretch === undefined
+        ? undefined
+        : Number.parseFloat(stretch),
+    }))
     .filter(({ weight, stretch }) => (weight ?? stretch) !== undefined && isWithin(weight ?? REGULAR_WEIGHT, weights) && isWithin(stretch ?? NORMAL_STRETCH, stretches))
 }
 
@@ -209,7 +231,9 @@ async function measureFallbackInstances(family: string, instances: VariableFontI
     }
     faces.push({
       bold: (instance.weight ?? REGULAR_WEIGHT) >= BOLD_THRESHOLD,
-      width: index === -1 ? knownBold! : widths![index + 1]! / (regular ? widths![0]! : 1),
+      width: index === -1
+        ? knownBold!
+        : widths![index + 1]! / (regular ? widths![0]! : 1),
       descriptors: {
         ...(instance.weight !== undefined && { 'font-weight': instance.weight }),
         ...(instance.stretch !== undefined && { 'font-stretch': `${instance.stretch}%` }),
@@ -249,7 +273,9 @@ export async function generateFontFallbacks(family: string, data: NormalizedFont
     css.push(generateFallbackFontFace(metrics, {
       ...fallback,
       metrics: fallbackMetrics,
-      ...(data.unicodeRange?.length && { 'unicode-range': data.unicodeRange.join(', ') }),
+      ...(data.unicodeRange?.length && {
+        'unicode-range': data.unicodeRange.join(', '),
+      }),
     }))
     for (const instance of instances) {
       if (instance.bold && !fallbackMetrics?.bold) {
@@ -260,7 +286,9 @@ export async function generateFontFallbacks(family: string, data: NormalizedFont
         metrics: fallbackMetrics,
         bold: instance.bold,
         ...instance.descriptors,
-        ...(data.unicodeRange?.length && { 'unicode-range': data.unicodeRange.join(', ') }),
+        ...(data.unicodeRange?.length && {
+          'unicode-range': data.unicodeRange.join(', '),
+        }),
       }))
     }
   }
@@ -276,7 +304,11 @@ const formatMap: Record<string, string> = {
   svg: 'svg',
 }
 const extensionMap = Object.fromEntries(Object.entries(formatMap).map(([key, value]) => [value, key]))
-export const formatToExtension = (format?: string): string | undefined => format && format in extensionMap ? `.${extensionMap[format]}` : undefined
+export function formatToExtension(format?: string): string | undefined {
+  return format && format in extensionMap
+    ? `.${extensionMap[format]}`
+    : undefined
+}
 
 export function parseFont(font: string): RemoteFontSource | { name: string } {
   // render as `url("url/to/font") format("woff2")`
@@ -295,7 +327,15 @@ export function parseFont(font: string): RemoteFontSource | { name: string } {
 }
 
 // https://drafts.csswg.org/css-fonts-4/#font-format-values
-const fontFormatKeywords = new Set(['collection', 'embedded-opentype', 'opentype', 'svg', 'truetype', 'woff', 'woff2'])
+const fontFormatKeywords = new Set([
+  'collection',
+  'embedded-opentype',
+  'opentype',
+  'svg',
+  'truetype',
+  'woff',
+  'woff2',
+])
 
 function renderFontSrc(sources: Exclude<FontSource, string>[]) {
   return sources.map((src) => {
@@ -304,7 +344,9 @@ function renderFontSrc(sources: Exclude<FontSource, string>[]) {
       // `format()` takes a `<font-format>` keyword, or a string for values outside
       // that set (such as the legacy `woff2-variations`).
       if (src.format) {
-        rendered += ` format(${fontFormatKeywords.has(src.format) ? src.format : `"${src.format}"`})`
+        rendered += ` format(${fontFormatKeywords.has(src.format)
+          ? src.format
+          : `"${src.format}"`})`
       }
       // `tech()` takes `<font-tech>` keywords only — never a string.
       if (src.tech) {

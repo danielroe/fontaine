@@ -14,7 +14,9 @@ export function joinURL(base: string, ...segments: string[]): string {
       continue
     }
     url = url
-      ? `${url.endsWith('/') ? url : `${url}/`}${segment.replace(/^\.?\//, '')}`
+      ? `${url.endsWith('/')
+        ? url
+        : `${url}/`}${segment.replace(/^\.?\//, '')}`
       : segment
   }
   return url

@@ -16,7 +16,10 @@ function magicRegExpPlugin() {
     transform: {
       filter: transform.filter,
       handler(this: any, code: string, id: string) {
-        const context = { ...this, parse: (code: string, options?: object) => this.parse(code, { lang: 'ts', ...options }) }
+        const context = {
+          ...this,
+          parse: (code: string, options?: object) => this.parse(code, { lang: 'ts', ...options }),
+        }
         return transform.handler.call(context, code, id)
       },
     },
@@ -26,7 +29,9 @@ function magicRegExpPlugin() {
 export default defineConfig({
   entry: ['src/index.ts', 'src/postcss.ts'],
   format: ['es', 'cjs'],
-  plugins: [magicRegExpPlugin()],
+  plugins: [
+    magicRegExpPlugin(),
+  ],
   dts: {
     generator: 'oxc',
   },
@@ -34,14 +39,30 @@ export default defineConfig({
     'build:done': async function () {
       const { entireMetricsCollection } = await import('@capsizecss/metrics/entireMetricsCollection')
       // Keep only the fields `getMetricsForFamily` reads.
-      const fields = ['ascent', 'descent', 'lineGap', 'unitsPerEm', 'xWidthAvg', 'category', 'fullName', 'postscriptName'] as const
+      const fields = [
+        'ascent',
+        'descent',
+        'lineGap',
+        'unitsPerEm',
+        'xWidthAvg',
+        'category',
+        'fullName',
+        'postscriptName',
+      ] as const
       const boldFields = ['xWidthAvg', 'fullName', 'postscriptName'] as const
       const metrics = Object.fromEntries(Object.entries(entireMetricsCollection).map(([name, font]) => {
         const bold = (font.variants as Record<string, Record<typeof boldFields[number], unknown> | undefined>)[700]
-        return [name, {
-          ...Object.fromEntries(fields.map(field => [field, font[field as keyof typeof font]])),
-          ...bold && { variants: { 700: Object.fromEntries(boldFields.map(field => [field, bold[field]])) } },
-        }]
+        return [
+          name,
+          {
+            ...Object.fromEntries(fields.map(field => [field, font[field as keyof typeof font]])),
+            ...bold && {
+              variants: {
+                700: Object.fromEntries(boldFields.map(field => [field, bold[field]])),
+              },
+            },
+          },
+        ]
       }))
       const output = `export const entireMetricsCollection = ${JSON.stringify(metrics)}`
       fs.writeFileSync('dist/capsize-font-metrics.mjs', output)

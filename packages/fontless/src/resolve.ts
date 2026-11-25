@@ -19,7 +19,17 @@ interface ResolverContext {
 }
 
 /** Family-level keys that are not `@font-face` descriptors and must not be passed through to `normalizeFontData`. */
-const NON_DESCRIPTOR_KEYS = new Set(['name', 'global', 'preload', 'fallbacks', 'fallbackInstances', 'provider', 'providerOptions', 'glyphs', 'variableAxis'])
+const NON_DESCRIPTOR_KEYS = new Set([
+  'name',
+  'global',
+  'preload',
+  'fallbacks',
+  'fallbackInstances',
+  'provider',
+  'providerOptions',
+  'glyphs',
+  'variableAxis',
+])
 
 /**
  * Providers whose `experimental.glyphs` option means 'these characters', so a family's
@@ -30,7 +40,14 @@ const NON_DESCRIPTOR_KEYS = new Set(['name', 'global', 'preload', 'fallbacks', '
 const GLYPH_PASSTHROUGH_PROVIDERS = new Set(['google'])
 
 /** Providers that resolve fonts from remote stylesheets, whose sources must not point at files on disk. */
-const REMOTE_PROVIDERS = new Set(['adobe', 'bunny', 'fontshare', 'fontsource', 'google', 'googleicons'])
+const REMOTE_PROVIDERS = new Set([
+  'adobe',
+  'bunny',
+  'fontshare',
+  'fontsource',
+  'google',
+  'googleicons',
+])
 
 /** Ask providers that support it to serve an already-subsetted file. */
 function withGlyphPassthrough(providerOptions: ProviderFamilyOptions | undefined, glyphs: string | undefined, keys: Iterable<string>, toName: (key: string) => string): ProviderFamilyOptions | undefined {
@@ -44,7 +61,13 @@ function withGlyphPassthrough(providerOptions: ProviderFamilyOptions | undefined
     }
     const existing = options[key] as { experimental?: { glyphs?: string[] } } | undefined
     if (!existing?.experimental?.glyphs) {
-      options[key] = { ...existing, experimental: { ...existing?.experimental, glyphs: [...glyphs] } }
+      options[key] = {
+        ...existing,
+        experimental: {
+          ...existing?.experimental,
+          glyphs: [...glyphs],
+        },
+      }
     }
   }
   return options
@@ -61,16 +84,29 @@ function pickDescriptors(override: FontFamilyManualOverride): RawFontFaceData {
 }
 
 function toArray<T>(value: T | T[]): T[] {
-  return Array.isArray(value) ? value : [value]
+  return Array.isArray(value)
+    ? value
+    : [value]
 }
 
-const METRIC_OVERRIDE_KEYS = ['ascentOverride', 'descentOverride', 'lineGapOverride', 'sizeAdjust'] as const
+const METRIC_OVERRIDE_KEYS = [
+  'ascentOverride',
+  'descentOverride',
+  'lineGapOverride',
+  'sizeAdjust',
+] as const
 
 /** Apply family-level `@font-face` descriptors to faces resolved by a provider. */
 function applyFaceOverrides(override: FontFamilyManualOverride | FontFamilyProviderOverride | undefined, fonts: FontFaceData[]): NormalizedFontFaceData[] {
-  const display = override && 'display' in override ? override.display : undefined
-  const rawUnicodeRange = override && 'unicodeRange' in override ? override.unicodeRange : undefined
-  const unicodeRange = rawUnicodeRange ? toArray(rawUnicodeRange) : undefined
+  const display = override && 'display' in override
+    ? override.display
+    : undefined
+  const rawUnicodeRange = override && 'unicodeRange' in override
+    ? override.unicodeRange
+    : undefined
+  const unicodeRange = rawUnicodeRange
+    ? toArray(rawUnicodeRange)
+    : undefined
   const metricOverrides: Record<string, string> = {}
   for (const key of METRIC_OVERRIDE_KEYS) {
     const value = override?.[key]
@@ -219,13 +255,23 @@ export async function createResolver(context: ResolverContext): Promise<Resolver
   // defaults entirely (to prevent array merging)
   // Note: defaultValues.fallbacks uses shared category-aware presets from fontaine package
   const normalizedDefaults = {
-    weights: [...new Set((options.defaults?.weights || defaultValues.weights).map(v => String(v)))],
-    styles: [...new Set(options.defaults?.styles || defaultValues.styles)],
-    subsets: [...new Set(options.defaults?.subsets || defaultValues.subsets)],
-    formats: [...new Set(options.defaults?.formats || defaultValues.formats)],
+    weights: [
+      ...new Set((options.defaults?.weights || defaultValues.weights).map(v => String(v))),
+    ],
+    styles: [
+      ...new Set(options.defaults?.styles || defaultValues.styles),
+    ],
+    subsets: [
+      ...new Set(options.defaults?.subsets || defaultValues.subsets),
+    ],
+    formats: [
+      ...new Set(options.defaults?.formats || defaultValues.formats),
+    ],
     fallbacks: Object.fromEntries(Object.entries(defaultValues.fallbacks).map(([key, value]) => [
       key,
-      Array.isArray(options.defaults?.fallbacks) ? options.defaults.fallbacks : options.defaults?.fallbacks?.[key as GenericCSSFamily] || value,
+      Array.isArray(options.defaults?.fallbacks)
+        ? options.defaults.fallbacks
+        : options.defaults?.fallbacks?.[key as GenericCSSFamily] || value,
     ])) as Record<GenericCSSFamily, string[]>,
   }
 
@@ -242,14 +288,21 @@ export async function createResolver(context: ResolverContext): Promise<Resolver
    * generic family declared alongside it or, failing that, the category the provider reports.
    */
   function resolveFallbacks(override: FontFamilyManualOverride | FontFamilyProviderOverride | undefined, fallbackOptions: { fallbacks: string[], generic?: GenericCSSFamily } | undefined, providerFallbacks?: string[]): string[] {
-    const explicit = override && 'fallbacks' in override ? override.fallbacks : undefined
+    const explicit = override && 'fallbacks' in override
+      ? override.fallbacks
+      : undefined
     if (explicit) {
       return explicit
     }
     const category = fallbackOptions?.generic ?? providerFallbacks?.find(fallback => fallback in normalizedDefaults.fallbacks) as GenericCSSFamily | undefined
     const defaults = normalizedDefaults.fallbacks[category || 'sans-serif']
     if (fallbackOptions?.fallbacks.length) {
-      return [...new Set([...fallbackOptions.fallbacks, ...defaults])]
+      return [
+        ...new Set([
+          ...fallbackOptions.fallbacks,
+          ...defaults,
+        ]),
+      ]
     }
     return defaults
   }
@@ -274,9 +327,14 @@ export async function createResolver(context: ResolverContext): Promise<Resolver
 
     const fallbacks = resolveFallbacks(override, fallbackOptions)
     const fallbackInstances = override?.fallbackInstances ?? options.defaults?.fallbackInstances
-    const glyphs = override?.glyphs ? normalizeGlyphs(override.glyphs) : defaultGlyphs
+    const glyphs = override?.glyphs
+      ? normalizeGlyphs(override.glyphs)
+      : defaultGlyphs
     const variableAxis = override?.variableAxis ?? options.defaults?.variableAxis
-    const transforms = { ...(glyphs && { glyphs }), ...(variableAxis && { variableAxis }) }
+    const transforms = {
+      ...(glyphs && { glyphs }),
+      ...(variableAxis && { variableAxis }),
+    }
 
     if (override && 'src' in override) {
       // Nothing resolves these sources, so every requested axis is left to `fontless`.
@@ -301,7 +359,11 @@ export async function createResolver(context: ResolverContext): Promise<Resolver
     }
 
     // Respect custom weights, styles, subsets and formats options
-    const defaults = { ...normalizedDefaults, fallbacks, ...(variableAxis && { variableAxis }) }
+    const defaults = {
+      ...normalizedDefaults,
+      fallbacks,
+      ...(variableAxis && { variableAxis }),
+    }
     for (const key of ['weights', 'styles', 'subsets'] as const) {
       if (override?.[key]) {
         defaults[key as 'weights'] = override[key]!.map(v => String(v))
@@ -313,7 +375,9 @@ export async function createResolver(context: ResolverContext): Promise<Resolver
 
     // provider-specific options if available
     const providerOptions = withGlyphPassthrough(
-      override && 'providerOptions' in override ? override.providerOptions : undefined,
+      override && 'providerOptions' in override
+        ? override.providerOptions
+        : undefined,
       glyphs,
       prioritisedProviders,
       toProviderName,
@@ -324,7 +388,10 @@ export async function createResolver(context: ResolverContext): Promise<Resolver
       if (override.provider in providers) {
         const providerName = toProviderName(override.provider)
         const resolveOptions = providerOptions?.[override.provider]
-          ? { ...defaults, options: { [providerName]: providerOptions[override.provider] } }
+          ? {
+              ...defaults,
+              options: { [providerName]: providerOptions[override.provider] },
+            }
           : defaults
         const result = await unifont.resolveFont(fontFamily, resolveOptions as typeof defaults, [providerName])
         // Rewrite font source URLs to be proxied/local URLs
@@ -358,7 +425,10 @@ export async function createResolver(context: ResolverContext): Promise<Resolver
 
     // Build options with provider-specific family options merged
     const resolveOptions = providerOptions
-      ? { ...defaults, options: remapFamilyOptions(providerOptions) }
+      ? {
+          ...defaults,
+          options: remapFamilyOptions(providerOptions),
+        }
       : defaults
 
     const result = await unifont.resolveFont(fontFamily, resolveOptions as typeof defaults, toProviderNames(prioritisedProviders))

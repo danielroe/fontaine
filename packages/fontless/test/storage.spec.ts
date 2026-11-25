@@ -27,7 +27,10 @@ const scratchDir = () => mkdtemp(join(tmpdir(), 'fontless-cache-'))
 describe('createFontlessStorage', () => {
   it('should default to a directory alongside vite\'s cacheDir', async () => {
     const dir = await scratchDir()
-    const storage = createFontlessStorage(undefined, { root: join(dir, 'src'), cacheDir: join(dir, 'node_modules/.vite') })
+    const storage = createFontlessStorage(undefined, {
+      root: join(dir, 'src'),
+      cacheDir: join(dir, 'node_modules/.vite'),
+    })
 
     await storage.setItem('key', 'value')
 
@@ -98,7 +101,9 @@ describe('createFontlessStorage', () => {
   })
 
   it('should use a provided unstorage instance as-is', () => {
-    const custom = createStorage({ driver: memoryDriver() })
+    const custom = createStorage({
+      driver: memoryDriver(),
+    })
     expect(createFontlessStorage(custom)).toBe(custom)
   })
 })

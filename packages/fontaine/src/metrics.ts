@@ -65,7 +65,9 @@ export async function getMetricsForFamily(family: string): Promise<FontFaceMetri
     }
     const bold = (metrics.variants as { 700?: NonNullable<FontFaceMetrics['bold']> } | undefined)?.[700]
     if (bold) {
-      filteredMetrics.bold = alias ? { xWidthAvg: bold.xWidthAvg } : bold
+      filteredMetrics.bold = alias
+        ? { xWidthAvg: bold.xWidthAvg }
+        : bold
     }
     metricCache[family] = filteredMetrics
     return filteredMetrics
@@ -80,7 +82,11 @@ const urlRequestCache = new Map<string, Promise<Font>>()
 
 // A Windows drive letter is a valid URL scheme, so reject paths before parsing.
 function parseSourceURL(source: URL | string): URL | null {
-  return typeof source === 'string' ? (isAbsolute(source) ? null : URL.parse(source)) : source
+  return typeof source === 'string'
+    ? (isAbsolute(source)
+        ? null
+        : URL.parse(source))
+    : source
 }
 
 /**
@@ -92,7 +98,9 @@ function parseSourceURL(source: URL | string): URL | null {
  * @async
  */
 export async function readMetrics(_source: URL | string): Promise<FontFaceMetrics | null> {
-  const source = typeof _source !== 'string' && 'href' in _source ? _source.href : _source
+  const source = typeof _source !== 'string' && 'href' in _source
+    ? _source.href
+    : _source
 
   if (source in metricCache)
     return metricCache[source] ?? null
@@ -208,7 +216,9 @@ function regionScalar(region: VariationRegionAxis[], coords: number[]): number {
       return scalar
     if (coord <= start || coord >= end)
       return 0
-    return scalar * (coord < peak ? (coord - start) / (peak - start) : (end - coord) / (end - peak))
+    return scalar * (coord < peak
+      ? (coord - start) / (peak - start)
+      : (end - coord) / (end - peak))
   }, 1)
 }
 
@@ -231,8 +241,13 @@ function measureVariationWidths(buffer: Buffer, variations: Array<Record<string,
 
   const table = font.HVAR
   // A font that is a subset without Latin letters is measured by every glyph it has instead.
-  const sample = characterFrequency.map(([character, frequency]): [number, number] => [character.codePointAt(0)!, frequency])
-  const glyphs = (sample.every(([codePoint]) => font.hasGlyphForCodePoint(codePoint)) ? sample : font.characterSet.map((codePoint): [number, number] => [codePoint, 1]))
+  const sample = characterFrequency.map(([character, frequency]): [number, number] => [
+    character.codePointAt(0)!,
+    frequency,
+  ])
+  const glyphs = (sample.every(([codePoint]) => font.hasGlyphForCodePoint(codePoint))
+    ? sample
+    : font.characterSet.map((codePoint): [number, number] => [codePoint, 1]))
     .map(([codePoint, weight]) => {
       const glyph = font.glyphForCodePoint(codePoint)
       return { id: glyph.id, advance: glyph.advanceWidth, weight }
@@ -305,7 +320,9 @@ export async function readMetricsForSource(source: string, importer: string | un
     return readMetrics(source)
 
   const resolved = resolvePath(source)
-  return readMetrics(typeof resolved === 'string' && isAbsolute(resolved) ? pathToFileURL(resolved) : resolved)
+  return readMetrics(typeof resolved === 'string' && isAbsolute(resolved)
+    ? pathToFileURL(resolved)
+    : resolved)
 }
 
 // inline `@capsizecss/metrics`
@@ -316,7 +333,9 @@ function fontFamilyToCamelCase(str: string) {
     .filter(Boolean)
     .map(
       (s, i) =>
-        `${s.charAt(0)[i > 0 ? 'toUpperCase' : 'toLowerCase']()}${s.slice(1)}`,
+        `${s.charAt(0)[i > 0
+          ? 'toUpperCase'
+          : 'toLowerCase']()}${s.slice(1)}`,
     )
     .join('')
 }

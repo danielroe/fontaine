@@ -30,7 +30,9 @@ async function importProvider(specifier: string, opts: ResolveProvidersOptions):
   const path = resolveModulePath(aliased, { from: `${opts.root}/`, try: true })
 
   try {
-    const module = await import(path ? pathToFileURL(path).href : aliased)
+    const module = await import(path
+      ? pathToFileURL(path).href
+      : aliased)
     return module.default ?? module
   }
   catch (error) {

@@ -124,7 +124,16 @@ describe('fontaine postcss plugin', () => {
   })
 
   it('should not add fallbacks for any generic family or CSS-wide keyword', async () => {
-    for (const value of ['sans-serif', 'monospace', 'system-ui', 'inherit', 'initial', 'unset', 'revert', 'revert-layer']) {
+    for (const value of [
+      'sans-serif',
+      'monospace',
+      'system-ui',
+      'inherit',
+      'initial',
+      'unset',
+      'revert',
+      'revert-layer',
+    ]) {
       expect(await process(`.foo { font-family: ${value}; }`)).toBe(`.foo { font-family: ${value}; }`)
     }
   })
@@ -150,7 +159,9 @@ describe('fontaine postcss plugin', () => {
       .foo {
         font-family: Poppins;
       }
-    `, { skipFontFaceGeneration: () => true })
+    `, {
+      skipFontFaceGeneration: () => true,
+    })
 
     expect(result).toContain('font-family: Poppins, "Poppins fallback";')
     expect(result).not.toContain('size-adjust')
@@ -162,7 +173,9 @@ describe('fontaine postcss plugin', () => {
         font-family: Poppins;
         src: url('poppins.woff2') format('woff2');
       }
-    `, { skipFontFaceGeneration: () => true })
+    `, {
+      skipFontFaceGeneration: () => true,
+    })
 
     expect(result).not.toContain('fallback')
   })
@@ -262,7 +275,9 @@ describe('fontaine postcss plugin', () => {
         font-family: "Unknown Family";
         src: url('/fonts/my.woff2') format('woff2');
       }
-    `, { resolvePath: () => new URL('./my.woff2', import.meta.url) })
+    `, {
+      resolvePath: () => new URL('./my.woff2', import.meta.url),
+    })
 
     expect(fromFile).toHaveBeenCalledWith(fileURLToPath(new URL('./my.woff2', import.meta.url)))
   })
@@ -277,12 +292,23 @@ describe('fontaine postcss plugin', () => {
       body {
         font-family: "Unknown Family";
       }
-    `, { from: entry, to: entry, map: { inline: false } })
+    `, {
+      from: entry,
+      to: entry,
+      map: { inline: false },
+    })
 
-    await postcss([fontaine({ fallbacks: ['Arial'] })])
+    await postcss([
+      fontaine({
+        fallbacks: ['Arial'],
+      }),
+    ])
       .process(compiled.css, {
         from: entry,
-        map: { prev: compiled.map.toString(), inline: false },
+        map: {
+          prev: compiled.map.toString(),
+          inline: false,
+        },
       })
 
     expect(fromFile).toHaveBeenCalledWith(fileURLToPath(new URL('./fixtures/my.woff2', import.meta.url)))
@@ -301,13 +327,20 @@ describe('fontaine postcss plugin', () => {
       mappings: '',
     })
 
-    await postcss([fontaine({ fallbacks: ['Arial'] })])
+    await postcss([
+      fontaine({
+        fallbacks: ['Arial'],
+      }),
+    ])
       .process(`
         @font-face {
           font-family: "Unknown Family";
           src: url('./fixtures/my.woff2') format('woff2');
         }
-      `, { from: entry, map: { prev, inline: false } })
+      `, {
+        from: entry,
+        map: { prev, inline: false },
+      })
 
     expect(fromFile).toHaveBeenCalledWith(fileURLToPath(new URL('./fixtures/my.woff2', import.meta.url)))
   })
@@ -321,7 +354,9 @@ describe('fontaine postcss plugin', () => {
       .foo {
         font-family: Poppins;
       }
-    `, { fallbacks: ['Entirely Unknown Font'] })
+    `, {
+      fallbacks: ['Entirely Unknown Font'],
+    })
 
     expect(result).not.toContain('size-adjust')
     expect(result).toContain('font-family: Poppins, "Poppins fallback";')
@@ -401,7 +436,9 @@ describe('fontaine postcss plugin', () => {
       .foo {
         font-family: Poppins;
       }
-    `, { fallbackName: name => `${name}-override` })).toContain('font-family: Poppins, "Poppins-override";')
+    `, {
+      fallbackName: name => `${name}-override`,
+    })).toContain('font-family: Poppins, "Poppins-override";')
   })
 })
 
@@ -411,7 +448,10 @@ function process(
   from?: string,
 ) {
   return postcss([
-    fontaine({ fallbacks: ['Segoe UI', 'Arial'], ...options }),
+    fontaine({
+      fallbacks: ['Segoe UI', 'Arial'],
+      ...options,
+    }),
   ])
     .process(css, { from })
     .then(result => result.css)

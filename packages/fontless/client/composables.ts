@@ -63,7 +63,12 @@ export function getFontFileSize(url: string): Promise<FontFileSize> {
   if (!size) {
     size = fetch(new URL(url, location.origin), { method: 'HEAD' }).then((response) => {
       const length = response.headers.get('content-length')
-      return { status: response.status, size: length === null ? undefined : Number(length) }
+      return {
+        status: response.status,
+        size: length === null
+          ? undefined
+          : Number(length),
+      }
     }, () => ({}))
     fileSizes.set(url, size)
   }
@@ -95,5 +100,7 @@ export function formatBytes(bytes: number): string {
 
 /** The path of a stylesheet id relative to `root`. */
 export function displayPath(id: string, root?: string): string {
-  return root && id.startsWith(`${root}/`) ? id.slice(root.length + 1) : id
+  return root && id.startsWith(`${root}/`)
+    ? id.slice(root.length + 1)
+    : id
 }

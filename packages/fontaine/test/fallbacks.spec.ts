@@ -5,11 +5,39 @@ describe('fallbacks module', () => {
   describe('default category fallbacks', () => {
     it('should export default category fallbacks', () => {
       expect(DEFAULT_CATEGORY_FALLBACKS).toBeDefined()
-      expect(DEFAULT_CATEGORY_FALLBACKS['sans-serif']).toEqual(['Segoe UI', 'Helvetica Neue', 'Arial', 'Noto Sans', 'Liberation Sans'])
-      expect(DEFAULT_CATEGORY_FALLBACKS.serif).toEqual(['Times New Roman', 'Georgia', 'Noto Serif', 'Liberation Serif'])
-      expect(DEFAULT_CATEGORY_FALLBACKS.monospace).toEqual(['Courier New', 'Roboto Mono', 'Noto Sans Mono', 'Liberation Mono'])
-      expect(DEFAULT_CATEGORY_FALLBACKS.display).toEqual(['Segoe UI', 'Helvetica Neue', 'Arial', 'Noto Sans', 'Liberation Sans'])
-      expect(DEFAULT_CATEGORY_FALLBACKS.handwriting).toEqual(['Segoe UI', 'Helvetica Neue', 'Arial', 'Noto Sans', 'Liberation Sans'])
+      expect(DEFAULT_CATEGORY_FALLBACKS['sans-serif']).toEqual([
+        'Segoe UI',
+        'Helvetica Neue',
+        'Arial',
+        'Noto Sans',
+        'Liberation Sans',
+      ])
+      expect(DEFAULT_CATEGORY_FALLBACKS.serif).toEqual([
+        'Times New Roman',
+        'Georgia',
+        'Noto Serif',
+        'Liberation Serif',
+      ])
+      expect(DEFAULT_CATEGORY_FALLBACKS.monospace).toEqual([
+        'Courier New',
+        'Roboto Mono',
+        'Noto Sans Mono',
+        'Liberation Mono',
+      ])
+      expect(DEFAULT_CATEGORY_FALLBACKS.display).toEqual([
+        'Segoe UI',
+        'Helvetica Neue',
+        'Arial',
+        'Noto Sans',
+        'Liberation Sans',
+      ])
+      expect(DEFAULT_CATEGORY_FALLBACKS.handwriting).toEqual([
+        'Segoe UI',
+        'Helvetica Neue',
+        'Arial',
+        'Noto Sans',
+        'Liberation Sans',
+      ])
     })
   })
 
@@ -26,7 +54,10 @@ describe('fallbacks module', () => {
     it('should return per-family fallbacks when specified in object', () => {
       const result = resolveCategoryFallbacks({
         fontFamily: 'Poppins',
-        fallbacks: { Poppins: ['Custom Font'], Roboto: ['Another Font'] },
+        fallbacks: {
+          Poppins: ['Custom Font'],
+          Roboto: ['Another Font'],
+        },
         metrics: { category: 'sans-serif' },
       })
       expect(result).toEqual(['Custom Font'])
@@ -46,7 +77,9 @@ describe('fallbacks module', () => {
         fontFamily: 'Lora',
         fallbacks: {},
         metrics: { category: 'serif' },
-        categoryFallbacks: { serif: ['Georgia Only'] },
+        categoryFallbacks: {
+          serif: ['Georgia Only'],
+        },
       })
       expect(result).toEqual(['Georgia Only'])
     })
@@ -91,9 +124,13 @@ describe('fallbacks module', () => {
     it('should prioritize per-family overrides over category fallbacks', () => {
       const result = resolveCategoryFallbacks({
         fontFamily: 'Lora',
-        fallbacks: { Lora: ['Arial'] },
+        fallbacks: {
+          Lora: ['Arial'],
+        },
         metrics: { category: 'serif' },
-        categoryFallbacks: { serif: ['Georgia'] },
+        categoryFallbacks: {
+          serif: ['Georgia'],
+        },
       })
       expect(result).toEqual(['Arial'])
     })
@@ -103,7 +140,9 @@ describe('fallbacks module', () => {
         fontFamily: 'Lora',
         fallbacks: ['Helvetica'],
         metrics: { category: 'serif' },
-        categoryFallbacks: { serif: ['Georgia'] },
+        categoryFallbacks: {
+          serif: ['Georgia'],
+        },
       })
       expect(result).toEqual(['Helvetica'])
     })

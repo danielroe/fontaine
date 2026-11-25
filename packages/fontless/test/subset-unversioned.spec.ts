@@ -11,7 +11,11 @@ import { afterAll, describe, expect, it, vi } from 'vitest'
 // lives on its own so the mock cannot leak into the other suites.
 vi.mock('node:module', async importOriginal => ({
   ...await importOriginal<typeof import('node:module')>(),
-  createRequire: () => ({ resolve: { paths: () => [] } }),
+  createRequire: () => ({
+    resolve: {
+      paths: () => [],
+    },
+  }),
 }))
 
 const fixture = fileURLToPath(new URL('fixtures/font.woff2', import.meta.url))
@@ -35,13 +39,28 @@ describe('subsetting without a known subsetter version', () => {
     scratchDirs.push(root)
     await fsp.writeFile(join(root, 'index.html'), '<!doctype html><html><head><link rel="stylesheet" href="/style.css"></head><body></body></html>')
     await fsp.writeFile(join(root, 'style.css'), `body { font-family: 'Inter' }`)
-    const cache = createStorage({ driver: memoryDriver() })
+    const cache = createStorage({
+      driver: memoryDriver(),
+    })
 
     await build({
       root,
       configFile: false,
       logLevel: 'silent',
-      plugins: [fontless({ cache, families: [{ name: 'Inter', src: [{ url: pathToFileURL(fixture).href, format: 'woff2' }], glyphs: 'Hand' }] })],
+      plugins: [
+        fontless({
+          cache,
+          families: [
+            {
+              name: 'Inter',
+              src: [
+                { url: pathToFileURL(fixture).href, format: 'woff2' },
+              ],
+              glyphs: 'Hand',
+            },
+          ],
+        }),
+      ],
       build: { outDir },
     })
     const [file] = await Array.fromAsync(fsp.glob('**/*.woff2', { cwd: outDir }))

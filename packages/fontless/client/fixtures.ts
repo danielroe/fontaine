@@ -1,11 +1,34 @@
 import type { FontFamilyUsage, ManualFontDetails, ProviderFontDetails } from 'fontless'
 import { fileURLToPath } from 'node:url'
 
-const LATIN = ['U+0000-00FF', 'U+0131', 'U+0152-0153', 'U+02BB-02BC', 'U+02C6', 'U+02DA', 'U+02DC', 'U+0304', 'U+0308', 'U+0329', 'U+2000-206F', 'U+20AC', 'U+2122', 'U+2191', 'U+2193', 'U+2212', 'U+2215', 'U+FEFF', 'U+FFFD']
+const LATIN = [
+  'U+0000-00FF',
+  'U+0131',
+  'U+0152-0153',
+  'U+02BB-02BC',
+  'U+02C6',
+  'U+02DA',
+  'U+02DC',
+  'U+0304',
+  'U+0308',
+  'U+0329',
+  'U+2000-206F',
+  'U+20AC',
+  'U+2122',
+  'U+2191',
+  'U+2193',
+  'U+2212',
+  'U+2215',
+  'U+FEFF',
+  'U+FFFD',
+]
 
 function google(family: string, style: string, weight: number, url: string): ProviderFontDetails['fonts'][number] {
   return {
-    src: [{ name: family }, { url, originalURL: url, format: 'woff2' }],
+    src: [
+      { name: family },
+      { url, originalURL: url, format: 'woff2' },
+    ],
     style,
     weight,
     unicodeRange: LATIN,
@@ -38,33 +61,97 @@ export function createFixtures(base: string): Array<ManualFontDetails | Provider
       type: 'manual',
       fontFamily: 'Black Fox',
       fonts: [
-        { src: [{ name: 'Black Fox' }, { url: `${base}@fs${blackFox}`, format: 'truetype' }], weight: 400 },
+        {
+          src: [
+            { name: 'Black Fox' },
+            { url: `${base}@fs${blackFox}`, format: 'truetype' },
+          ],
+          weight: 400,
+        },
       ],
     },
   ]
 }
 
 export const usages: Array<[id: string | undefined, usages: FontFamilyUsage[]]> = [
-  [fileURLToPath(new URL('./styles.css', import.meta.url)), [
-    { fontFamily: 'Poppins', resolved: true, fallbacks: ['Arial', 'Helvetica Neue'], preloads: ['https://fonts.gstatic.com/s/poppins/v24/pxiEyp8kv8JHgFVrJJfecnFHGPc.woff2'] },
-    { fontFamily: 'Not A Real Font', resolved: false, fallbacks: [], preloads: [] },
-    { fontFamily: 'Helvetica', resolved: false, fallbacks: [], preloads: [] },
-  ]],
-  [`${fileURLToPath(new URL('./App.vue', import.meta.url))}?vue&type=style&index=0&lang.css`, [
-    { fontFamily: 'Fira Code', resolved: true, fallbacks: ['Courier New'], preloads: [] },
-  ]],
-  [`${fileURLToPath(new URL('./App.vue', import.meta.url))}?vue&type=style&index=0&inline&lang.css`, [
-    { fontFamily: 'Fira Code', resolved: true, fallbacks: ['Courier New'], preloads: [] },
-  ]],
-  ['\0/__uno.css', [
-    { fontFamily: 'Fira Code', resolved: true, fallbacks: [], preloads: [] },
-  ]],
-  ['\0/\0/__uno.css', [
-    { fontFamily: 'Fira Code', resolved: true, fallbacks: [], preloads: [] },
-  ]],
-  [undefined, [
-    { fontFamily: 'Poppins', resolved: true, fallbacks: [], preloads: [] },
-  ]],
+  [
+    fileURLToPath(new URL('./styles.css', import.meta.url)),
+    [
+      {
+        fontFamily: 'Poppins',
+        resolved: true,
+        fallbacks: ['Arial', 'Helvetica Neue'],
+        preloads: ['https://fonts.gstatic.com/s/poppins/v24/pxiEyp8kv8JHgFVrJJfecnFHGPc.woff2'],
+      },
+      {
+        fontFamily: 'Not A Real Font',
+        resolved: false,
+        fallbacks: [],
+        preloads: [],
+      },
+      {
+        fontFamily: 'Helvetica',
+        resolved: false,
+        fallbacks: [],
+        preloads: [],
+      },
+    ],
+  ],
+  [
+    `${fileURLToPath(new URL('./App.vue', import.meta.url))}?vue&type=style&index=0&lang.css`,
+    [
+      {
+        fontFamily: 'Fira Code',
+        resolved: true,
+        fallbacks: ['Courier New'],
+        preloads: [],
+      },
+    ],
+  ],
+  [
+    `${fileURLToPath(new URL('./App.vue', import.meta.url))}?vue&type=style&index=0&inline&lang.css`,
+    [
+      {
+        fontFamily: 'Fira Code',
+        resolved: true,
+        fallbacks: ['Courier New'],
+        preloads: [],
+      },
+    ],
+  ],
+  [
+    '\0/__uno.css',
+    [
+      {
+        fontFamily: 'Fira Code',
+        resolved: true,
+        fallbacks: [],
+        preloads: [],
+      },
+    ],
+  ],
+  [
+    '\0/\0/__uno.css',
+    [
+      {
+        fontFamily: 'Fira Code',
+        resolved: true,
+        fallbacks: [],
+        preloads: [],
+      },
+    ],
+  ],
+  [
+    undefined,
+    [
+      {
+        fontFamily: 'Poppins',
+        resolved: true,
+        fallbacks: [],
+        preloads: [],
+      },
+    ],
+  ],
 ]
 
 export const warnings = [

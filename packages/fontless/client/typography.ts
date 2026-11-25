@@ -14,17 +14,25 @@ const WEIGHT_NAMES: Record<number, string> = {
 
 /** A face's weight and style as a type designer would name it, such as `Bold Italic` or `Variable 100–900`. */
 export function styleName(font: Pick<FontFaceData, 'weight' | 'style'>): string {
-  const weights = (Array.isArray(font.weight) ? font.weight : String(font.weight ?? 400).split(' ')).map(Number)
+  const weights = (Array.isArray(font.weight)
+    ? font.weight
+    : String(font.weight ?? 400).split(' ')).map(Number)
   const weight = weights.length > 1 && weights[0] !== weights[1]
     ? `Variable ${weights[0]}–${weights[1]}`
     : WEIGHT_NAMES[weights[0]!] ?? String(weights[0])
-  const style = font.style && font.style !== 'normal' ? font.style[0]!.toUpperCase() + font.style.slice(1) : ''
-  return weight === 'Regular' && style ? style : [weight, style].filter(Boolean).join(' ')
+  const style = font.style && font.style !== 'normal'
+    ? font.style[0]!.toUpperCase() + font.style.slice(1)
+    : ''
+  return weight === 'Regular' && style
+    ? style
+    : [weight, style].filter(Boolean).join(' ')
 }
 
 /** CSS `font-weight` for a face. */
 export function cssWeight(font: Pick<FontFaceData, 'weight'>): string {
-  return Array.isArray(font.weight) ? font.weight.join(' ') : String(font.weight ?? 400)
+  return Array.isArray(font.weight)
+    ? font.weight.join(' ')
+    : String(font.weight ?? 400)
 }
 
 const SUBSETS: Array<[start: string, name: string]> = [
@@ -46,5 +54,7 @@ export function subsetName(unicodeRange?: string[]): string | undefined {
   if (!first) {
     return
   }
-  return SUBSETS.find(([start]) => start === first)?.[1] ?? `${unicodeRange!.length} ${unicodeRange!.length === 1 ? 'range' : 'ranges'}`
+  return SUBSETS.find(([start]) => start === first)?.[1] ?? `${unicodeRange!.length} ${unicodeRange!.length === 1
+    ? 'range'
+    : 'ranges'}`
 }
