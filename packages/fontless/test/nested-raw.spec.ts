@@ -31,6 +31,12 @@ describe('nested blocks', () => {
     expect(parse).toHaveBeenCalledTimes(1)
   })
 
+  it('leaves custom property values with braces but no nested rules untouched', async () => {
+    const css = `.a { --open: "{"; --list: [{}]; font-family: var(--open); }`
+    expect(await transform(css)).toBe(css)
+    expect(parse).toHaveBeenCalledTimes(3)
+  })
+
   it('still processes `font-family` and `font` declarations in nested rules', async () => {
     const result = await transform(`.a { --x: initial; div { font-family: Poppins; } } .c { p { font: 12px Lato; } }`)
     expect(result).toContain(`src: url("/poppins.woff2")`)
