@@ -113,7 +113,9 @@ const GLOBAL_USAGE = ''
 const VIRTUAL_PREFIX_RE = /^(?:\/?(?:[\0\uFFFD]|virtual:))+/
 
 function unique<T>(values: Iterable<T>): T[] {
-  return [...new Set(values)]
+  return [
+    ...new Set(values),
+  ]
 }
 
 function toUsage(id: string): FontlessDevframeUsage {
@@ -152,7 +154,9 @@ export function createFontlessDevframe(options: FontlessDevframeOptions = {}): F
   let nextId = 0
 
   function usagesOf(fontFamily: string): Array<[stylesheet: FontlessDevframeUsage | undefined, usage: FontFamilyUsage]> {
-    return [...stylesheets.values()].flatMap(({ usage: stylesheet, families }) => families
+    return [
+      ...stylesheets.values(),
+    ].flatMap(({ usage: stylesheet, families }) => families
       .filter(usage => usage.fontFamily === fontFamily)
       .map(usage => [stylesheet, usage] as [FontlessDevframeUsage | undefined, FontFamilyUsage]))
   }
@@ -161,7 +165,9 @@ export function createFontlessDevframe(options: FontlessDevframeOptions = {}): F
     const list = usagesOf(fontFamily)
     return {
       fallbacks: unique(list.flatMap(([, usage]) => usage.fallbacks)),
-      usages: uniqueUsages(list.flatMap(([stylesheet]) => stylesheet ? [stylesheet] : [])),
+      usages: uniqueUsages(list.flatMap(([stylesheet]) => stylesheet
+        ? [stylesheet]
+        : [])),
       global: list.some(([stylesheet]) => !stylesheet),
       preloads: unique(list.flatMap(([, usage]) => usage.preloads)),
     }
@@ -169,15 +175,23 @@ export function createFontlessDevframe(options: FontlessDevframeOptions = {}): F
 
   function snapshot(): Omit<FontlessDevframeState, 'root'> {
     const unresolved: FontlessDevframeUnresolvedFamily[] = []
-    for (const fontFamily of unique([...stylesheets.values()].flatMap(({ families }) => families.map(usage => usage.fontFamily)))) {
+    for (const fontFamily of unique([
+      ...stylesheets.values(),
+    ].flatMap(({ families }) => families.map(usage => usage.fontFamily)))) {
       if (!families.has(fontFamily) && !usagesOf(fontFamily).some(([, usage]) => usage.resolved)) {
-        unresolved.push({ fontFamily, system: isSystemFontFamily(fontFamily), usages: summarise(fontFamily).usages })
+        unresolved.push({
+          fontFamily,
+          system: isSystemFontFamily(fontFamily),
+          usages: summarise(fontFamily).usages,
+        })
       }
     }
     return {
       reportsUsage: !!options.reportsUsage,
       ui: { ...options.ui },
-      families: [...families.values()].map(family => ({
+      families: [
+        ...families.values(),
+      ].map(family => ({
         ...family,
         ...summarise(family.fontFamily),
         fallbackCSS: fallbackCSS.get(family.fontFamily)?.css ?? '',
@@ -244,10 +258,15 @@ export function createFontlessDevframe(options: FontlessDevframeOptions = {}): F
   function exposeUsage(id: string | undefined, usages: FontFamilyUsage[]) {
     const previous = stylesheets.get(id ?? GLOBAL_USAGE)?.families ?? []
     stylesheets.set(id ?? GLOBAL_USAGE, {
-      usage: id ? toUsage(id) : undefined,
+      usage: id
+        ? toUsage(id)
+        : undefined,
       families: JSON.parse(JSON.stringify(usages)),
     })
-    for (const fontFamily of unique([...previous, ...usages].map(usage => usage.fontFamily))) {
+    for (const fontFamily of unique([
+      ...previous,
+      ...usages,
+    ].map(usage => usage.fontFamily))) {
       void renderFallbacks(fontFamily)
     }
     scheduleFlush()
@@ -275,7 +294,14 @@ export function createFontlessDevframe(options: FontlessDevframeOptions = {}): F
     capabilities: { build: false },
     async setup(ctx) {
       const state = await ctx.scope(FONTLESS_DEVFRAME_NAMESPACE).rpc.sharedState('fonts', {
-        initialValue: { root: ctx.cwd, reportsUsage: false, ui: {}, families: [], unresolved: [], warnings: [] },
+        initialValue: {
+          root: ctx.cwd,
+          reportsUsage: false,
+          ui: {},
+          families: [],
+          unresolved: [],
+          warnings: [],
+        },
       })
       const value = snapshot()
       state.mutate((draft) => {
@@ -285,5 +311,10 @@ export function createFontlessDevframe(options: FontlessDevframeOptions = {}): F
     },
   }
 
-  return { definition, exposeFont, exposeUsage, exposeWarning }
+  return {
+    definition,
+    exposeFont,
+    exposeUsage,
+    exposeWarning,
+  }
 }

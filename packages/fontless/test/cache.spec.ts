@@ -20,8 +20,17 @@ async function buildFixture(root: string, cache?: FontlessOptions['cache']) {
   await build({
     root,
     logLevel: 'silent',
-    build: { outDir: join(root, 'dist') },
-    plugins: [fontless({ cache, families: [{ name: 'Poppins', provider: 'google' }] })],
+    build: {
+      outDir: join(root, 'dist'),
+    },
+    plugins: [
+      fontless({
+        cache,
+        families: [
+          { name: 'Poppins', provider: 'google' },
+        ],
+      }),
+    ],
   })
 }
 
@@ -42,7 +51,9 @@ describe('cache option', () => {
 
   it('should use a provided unstorage instance', { timeout: 30_000 }, async () => {
     const root = await createFixture()
-    const storage: Storage = createStorage({ driver: memoryDriver() })
+    const storage: Storage = createStorage({
+      driver: memoryDriver(),
+    })
     await buildFixture(root, storage)
 
     expect(await storage.getKeys()).not.toEqual([])

@@ -92,7 +92,13 @@ describe('generateFontFace', () => {
   it('should use the bold face of the fallback and its metrics', async () => {
     const metrics = await readMetrics(fixtureURL)
     const fallbackMetrics = await getMetricsForFamily('Arial')
-    expect(generateFontFace(metrics!, { 'name': 'example fallback', 'font': 'Arial', 'metrics': fallbackMetrics!, 'bold': true, 'font-weight': 700 })).toMatchInlineSnapshot(`
+    expect(generateFontFace(metrics!, {
+      'name': 'example fallback',
+      'font': 'Arial',
+      'metrics': fallbackMetrics!,
+      'bold': true,
+      'font-weight': 700,
+    })).toMatchInlineSnapshot(`
       "@font-face {
         font-family: "example fallback";
         src: local("Arial Bold"), local("Arial-Bold"), local("Arial-BoldMT");
@@ -109,7 +115,12 @@ describe('generateFontFace', () => {
   it('should size a bold fallback without bold metrics by its regular face', async () => {
     const metrics = await readMetrics(fixtureURL)
     const { bold, ...fallbackMetrics } = (await getMetricsForFamily('Arial'))!
-    const face = generateFontFace(metrics!, { name: 'example fallback', font: 'sans-serif', metrics: fallbackMetrics, bold: true })
+    const face = generateFontFace(metrics!, {
+      name: 'example fallback',
+      font: 'sans-serif',
+      metrics: fallbackMetrics,
+      bold: true,
+    })
     expect(face).toContain('  src: local("Arial Bold"), local("Arial-Bold"), local("Arimo Bold"), local("Arimo-Bold"),')
     expect(face).not.toContain('ArialMT')
     expect(face).toContain('  size-adjust: 112.1577%;')
@@ -213,7 +224,10 @@ describe('getMetricsForFamily', () => {
     ['Liberation Mono', 'Cousine'],
   ])('reads metrics for %s from %s', async (family, compatible) => {
     const { fullName, postscriptName, bold, ...metrics } = (await getMetricsForFamily(compatible))!
-    expect(await getMetricsForFamily(family)).toEqual({ ...metrics, bold: { xWidthAvg: bold!.xWidthAvg } })
+    expect(await getMetricsForFamily(family)).toEqual({
+      ...metrics,
+      bold: { xWidthAvg: bold!.xWidthAvg },
+    })
   })
 
   it('handles non-existent metrics', async () => {
@@ -272,7 +286,9 @@ describe('readMetrics', () => {
         response.end()
         return
       }
-      handler(request, response, { public: dirname(fileURLToPath(fixtureURL)) })
+      handler(request, response, {
+        public: dirname(fileURLToPath(fixtureURL)),
+      })
     })
     const port = await getRandomPort()
     server.listen(port, '127.0.0.1')
@@ -290,8 +306,24 @@ describe('readMetrics', () => {
 })
 
 describe('readVariationWidths', () => {
-  const variations: Array<Record<string, number>> = [{ wght: 400 }, { wght: 700 }, { wght: 800 }, { wght: 700, wdth: 125 }, { wght: 400, wdth: 62 }, {}, { wght: 5000, slnt: -10 }]
-  const widths = [0.9622, 1.0355, 1.0887, 1.3206, 0.6555, 1, 1.1631]
+  const variations: Array<Record<string, number>> = [
+    { wght: 400 },
+    { wght: 700 },
+    { wght: 800 },
+    { wght: 700, wdth: 125 },
+    { wght: 400, wdth: 62 },
+    {},
+    { wght: 5000, slnt: -10 },
+  ]
+  const widths = [
+    0.9622,
+    1.0355,
+    1.0887,
+    1.3206,
+    0.6555,
+    1,
+    1.1631,
+  ]
 
   it('should read the relative width of a variable font at each variation', async () => {
     const result = await readVariationWidths(variableFixtureURL, variations)
@@ -299,7 +331,9 @@ describe('readVariationWidths', () => {
   })
 
   it('should read variation widths from a URL', async () => {
-    const server = createServer((request, response) => handler(request, response, { public: dirname(fileURLToPath(variableFixtureURL)) }))
+    const server = createServer((request, response) => handler(request, response, {
+      public: dirname(fileURLToPath(variableFixtureURL)),
+    }))
     const port = await getRandomPort()
     server.listen(port, '127.0.0.1')
     const result = await readVariationWidths(`http://127.0.0.1:${port}/archivo-variable.woff2`, variations)
@@ -315,14 +349,20 @@ describe('readVariationWidths', () => {
         response.end()
         return
       }
-      handler(request, response, { public: dirname(fileURLToPath(variableFixtureURL)) })
+      handler(request, response, {
+        public: dirname(fileURLToPath(variableFixtureURL)),
+      })
     })
     const port = await getRandomPort()
     server.listen(port, '127.0.0.1')
     const url = `http://127.0.0.1:${port}/archivo-variable.woff2`
 
-    await expect(readVariationWidths(url, [{ wght: 700 }])).rejects.toThrow()
-    expect(await readVariationWidths(url, [{ wght: 700 }])).toHaveLength(1)
+    await expect(readVariationWidths(url, [
+      { wght: 700 },
+    ])).rejects.toThrow()
+    expect(await readVariationWidths(url, [
+      { wght: 700 },
+    ])).toHaveLength(1)
     server.close()
   })
 

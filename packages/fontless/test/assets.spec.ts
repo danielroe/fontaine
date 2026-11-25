@@ -23,16 +23,28 @@ function createContext(overrides: Partial<NormalizeFontDataContext> = {}): Norma
 }
 
 function urls(context: NormalizeFontDataContext, src: string = 'https://fonts.example.com/font.woff2'): string[] {
-  const [face] = normalizeFontData(context, { src: [{ url: src, format: 'woff2' }] })
-  return face!.src.map(source => 'url' in source ? source.url : source.name)
+  const [face] = normalizeFontData(context, {
+    src: [
+      { url: src, format: 'woff2' },
+    ],
+  })
+  return face!.src.map(source => 'url' in source
+    ? source.url
+    : source.name)
 }
 
 describe('normalizeFontData', () => {
   it('should emit the same file name for a local font resolved from a different root', () => {
     const fileName = (root: string) => {
       const context = createContext({ root })
-      normalizeFontData(context, { src: [{ url: pathToFileURL(join(root, 'node_modules/@fontsource/inter/inter.woff2')).href, format: 'woff2' }] })
-      return [...context.renderedFontURLs.keys()][0]
+      normalizeFontData(context, {
+        src: [
+          { url: pathToFileURL(join(root, 'node_modules/@fontsource/inter/inter.woff2')).href, format: 'woff2' },
+        ],
+      })
+      return [
+        ...context.renderedFontURLs.keys(),
+      ][0]
     }
 
     expect(fileName('/home/ci/app')).toBe(fileName('/Users/daniel/code/app'))
@@ -57,25 +69,42 @@ describe('normalizeFontData', () => {
     const [source] = face!.src as [{ url: string, originalURL?: string }]
 
     expect(source.originalURL).toBe('https://fonts.example.com/font.woff2')
-    expect([...context.renderedFontURLs.values()]).toEqual([{ url: 'https://fonts.example.com/font.woff2', init: undefined }])
-    expect(source.url.endsWith([...context.renderedFontURLs.keys()][0]!)).toBe(true)
+    expect([
+      ...context.renderedFontURLs.values(),
+    ]).toEqual([
+      { url: 'https://fonts.example.com/font.woff2', init: undefined },
+    ])
+    expect(source.url.endsWith([
+      ...context.renderedFontURLs.keys(),
+    ][0]!)).toBe(true)
   })
 
   it('should resolve a source for each context it is given', () => {
-    const face = { src: [{ url: 'file:///fonts/font.woff2', format: 'woff2' }] }
+    const face = {
+      src: [
+        { url: 'file:///fonts/font.woff2', format: 'woff2' },
+      ],
+    }
     const resolve = (environment: string) => {
-      const [resolved] = normalizeFontData(createContext({ resolveAssetURL: () => `__VITE_ASSET__${environment}__` }), face)
+      const [resolved] = normalizeFontData(createContext({
+        resolveAssetURL: () => `__VITE_ASSET__${environment}__`,
+      }), face)
       return resolved!.src[0]
     }
 
     expect(resolve('client')).toMatchObject({ url: '__VITE_ASSET__client__', originalURL: 'file:///fonts/font.woff2' })
     expect(resolve('ssr')).toMatchObject({ url: '__VITE_ASSET__ssr__', originalURL: 'file:///fonts/font.woff2' })
-    expect(face.src).toEqual([{ url: 'file:///fonts/font.woff2', format: 'woff2' }])
+    expect(face.src).toEqual([
+      { url: 'file:///fonts/font.woff2', format: 'woff2' },
+    ])
   })
 
   it('should report rendered fonts to the callback with their public URL', () => {
     const seen: Array<[string, string]> = []
-    const context = createContext({ baseURL: '/build/', callback: (file, url) => void seen.push([file, url]) })
+    const context = createContext({
+      baseURL: '/build/',
+      callback: (file, url) => void seen.push([file, url]),
+    })
     normalizeFontData(context, { src: 'https://fonts.example.com/font.woff2' })
 
     expect(seen).toHaveLength(1)
@@ -85,12 +114,18 @@ describe('normalizeFontData', () => {
   it('should upgrade protocol-relative URLs to https', () => {
     const context = createContext()
     normalizeFontData(context, { src: '//fonts.example.com/font.woff2' })
-    expect([...context.renderedFontURLs.values()]).toEqual([{ url: 'https://fonts.example.com/font.woff2', init: undefined }])
+    expect([
+      ...context.renderedFontURLs.values(),
+    ]).toEqual([
+      { url: 'https://fonts.example.com/font.woff2', init: undefined },
+    ])
   })
 
   it('should leave local and relative font sources untouched', () => {
     const context = createContext({ baseURL: '/build/' })
-    expect(normalizeFontData(context, { src: 'Some Local Font' })[0]!.src).toEqual([{ name: 'Some Local Font' }])
+    expect(normalizeFontData(context, { src: 'Some Local Font' })[0]!.src).toEqual([
+      { name: 'Some Local Font' },
+    ])
     expect(urls(context, '/fonts/font.woff2')).toEqual(['/fonts/font.woff2'])
     expect(context.renderedFontURLs.size).toBe(0)
   })
@@ -104,10 +139,20 @@ describe('normalizeFontData', () => {
 
   it('should hash the whole URL when it has no filename', () => {
     const context = createContext()
-    normalizeFontData(context, { src: [{ url: 'https://fonts.example.com/', format: 'woff2' }] })
-    normalizeFontData(context, { src: [{ url: 'https://other.example.com/', format: 'woff2' }] })
+    normalizeFontData(context, {
+      src: [
+        { url: 'https://fonts.example.com/', format: 'woff2' },
+      ],
+    })
+    normalizeFontData(context, {
+      src: [
+        { url: 'https://other.example.com/', format: 'woff2' },
+      ],
+    })
 
-    const files = [...context.renderedFontURLs.keys()]
+    const files = [
+      ...context.renderedFontURLs.keys(),
+    ]
     expect(files).toHaveLength(2)
     expect(files[0]).not.toBe(files[1])
     expect(files.every(file => file.endsWith('.woff2'))).toBe(true)
@@ -115,34 +160,65 @@ describe('normalizeFontData', () => {
 
   it('should derive the extension from the format when the URL has none', () => {
     const context = createContext()
-    normalizeFontData(context, { src: [{ url: 'https://fonts.example.com/font', format: 'woff2' }] })
+    normalizeFontData(context, {
+      src: [
+        { url: 'https://fonts.example.com/font', format: 'woff2' },
+      ],
+    })
 
-    expect([...context.renderedFontURLs.keys()][0]).toMatch(/\.woff2$/)
+    expect([
+      ...context.renderedFontURLs.keys(),
+    ][0]).toMatch(/\.woff2$/)
   })
 
   it('should ignore the query and fragment of a URL when naming the emitted file', () => {
     const context = createContext()
-    normalizeFontData(context, { src: [{ url: 'https://fonts.example.com/font.woff2?v=1.2', format: 'woff2' }] })
-    normalizeFontData(context, { src: [{ url: 'https://fonts.example.com/font.ttf#face', format: 'truetype' }] })
+    normalizeFontData(context, {
+      src: [
+        { url: 'https://fonts.example.com/font.woff2?v=1.2', format: 'woff2' },
+      ],
+    })
+    normalizeFontData(context, {
+      src: [
+        { url: 'https://fonts.example.com/font.ttf#face', format: 'truetype' },
+      ],
+    })
 
-    const files = [...context.renderedFontURLs.keys()]
+    const files = [
+      ...context.renderedFontURLs.keys(),
+    ]
     expect(files[0]).toMatch(/^[\w-]+\.woff2$/)
     expect(files[1]).toMatch(/^[\w-]+\.ttf$/)
   })
 
   it('should emit no extension when neither the URL nor the format provides one', () => {
     const context = createContext()
-    normalizeFontData(context, { src: [{ url: 'https://fonts.example.com/font', format: 'unknown-format' }] })
+    normalizeFontData(context, {
+      src: [
+        { url: 'https://fonts.example.com/font', format: 'unknown-format' },
+      ],
+    })
 
-    expect([...context.renderedFontURLs.keys()][0]).not.toContain('.')
+    expect([
+      ...context.renderedFontURLs.keys(),
+    ][0]).not.toContain('.')
   })
 
   it('should register the request init a provider requires for a font', () => {
     const context = createContext()
-    const init = { headers: { authorization: 'Bearer token' } }
-    normalizeFontData(context, { src: [{ url: 'https://fonts.example.com/font.woff2', format: 'woff2' }], meta: { init } })
+    const init = {
+      headers: { authorization: 'Bearer token' },
+    }
+    normalizeFontData(context, {
+      src: [
+        { url: 'https://fonts.example.com/font.woff2', format: 'woff2' },
+      ],
+      meta: { init },
+    })
 
-    expect([...context.renderedFontURLs.values()][0]!.init).toEqual(init)
+    expect([
+      ...context.renderedFontURLs.values(),
+    ][0]!.init).toEqual(init)
   })
 
   it('should normalise unicode ranges to an array', () => {
@@ -152,7 +228,11 @@ describe('normalizeFontData', () => {
 
   it('should declare a unicode range covering the glyphs a locally subsetted face was reduced to', () => {
     const glyphs = normalizeGlyphs('Hand')!
-    const [face] = normalizeFontData(createContext(), { src: [{ url: 'https://fonts.example.com/font.woff2', format: 'woff2' }] }, { glyphs })
+    const [face] = normalizeFontData(createContext(), {
+      src: [
+        { url: 'https://fonts.example.com/font.woff2', format: 'woff2' },
+      ],
+    }, { glyphs })
     const range = face!.unicodeRange!
 
     expect(range).toEqual(['U+0048', 'U+0061', 'U+0064', 'U+006E'])
@@ -163,19 +243,34 @@ describe('normalizeFontData', () => {
   })
 
   it('should coalesce consecutive codepoints into ranges', () => {
-    const [face] = normalizeFontData(createContext(), { src: [{ url: 'https://fonts.example.com/font.woff2', format: 'woff2' }] }, { glyphs: normalizeGlyphs('abcdez0') })
+    const [face] = normalizeFontData(createContext(), {
+      src: [
+        { url: 'https://fonts.example.com/font.woff2', format: 'woff2' },
+      ],
+    }, {
+      glyphs: normalizeGlyphs('abcdez0'),
+    })
 
     expect(face!.unicodeRange).toEqual(['U+0030', 'U+0061-0065', 'U+007A'])
   })
 
   it('should keep a unicode range the provider declared', () => {
-    const [face] = normalizeFontData(createContext(), { src: [{ url: 'https://fonts.example.com/font.woff2', format: 'woff2' }], unicodeRange: 'U+0000-00FF' }, { glyphs: normalizeGlyphs('Hand') })
+    const [face] = normalizeFontData(createContext(), {
+      src: [
+        { url: 'https://fonts.example.com/font.woff2', format: 'woff2' },
+      ],
+      unicodeRange: 'U+0000-00FF',
+    }, {
+      glyphs: normalizeGlyphs('Hand'),
+    })
 
     expect(face!.unicodeRange).toEqual(['U+0000-00FF'])
   })
 
   it('should not declare a unicode range for a face with no emitted file', () => {
-    const [face] = normalizeFontData(createContext(), { src: 'Some Local Font' }, { glyphs: normalizeGlyphs('Hand') })
+    const [face] = normalizeFontData(createContext(), { src: 'Some Local Font' }, {
+      glyphs: normalizeGlyphs('Hand'),
+    })
 
     expect(face!.unicodeRange).toBeUndefined()
   })

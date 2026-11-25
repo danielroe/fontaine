@@ -28,7 +28,9 @@ export function normalizeGlyphs(glyphs?: string | string[]): string | undefined 
   }
   let text = ''
   let expandedCount = 0
-  for (const entry of Array.isArray(glyphs) ? glyphs : [glyphs]) {
+  for (const entry of Array.isArray(glyphs)
+    ? glyphs
+    : [glyphs]) {
     const ranges = toUnicodeRanges(entry)
     if (!ranges) {
       text += entry
@@ -44,13 +46,19 @@ export function normalizeGlyphs(glyphs?: string | string[]): string | undefined 
       text += expanded
     }
   }
-  const characters = [...new Set(text)]
-  return characters.length > 0 ? characters.sort().join('') : undefined
+  const characters = [
+    ...new Set(text),
+  ]
+  return characters.length > 0
+    ? characters.sort().join('')
+    : undefined
 }
 
 function toUnicodeRanges(entry: string): string[] | undefined {
   const ranges = entry.split(',').map(range => range.trim())
-  return ranges.every(range => UNICODE_RANGE_ENTRY.test(range)) ? ranges : undefined
+  return ranges.every(range => UNICODE_RANGE_ENTRY.test(range))
+    ? ranges
+    : undefined
 }
 
 /**
@@ -58,7 +66,9 @@ function toUnicodeRanges(entry: string): string[] | undefined {
  * codepoints into ranges.
  */
 export function glyphsToUnicodeRange(glyphs: string): string[] {
-  const codepoints = [...new Set([...glyphs].map(character => character.codePointAt(0)!))].sort((a, b) => a - b)
+  const codepoints = [
+    ...new Set([...glyphs].map(character => character.codePointAt(0)!)),
+  ].sort((a, b) => a - b)
   const ranges: string[] = []
   for (let index = 0; index < codepoints.length; index++) {
     const start = codepoints[index]!
@@ -66,7 +76,9 @@ export function glyphsToUnicodeRange(glyphs: string): string[] {
     while (codepoints[index + 1] === end + 1) {
       end = codepoints[++index]!
     }
-    ranges.push(end > start ? `U+${toHex(start)}-${toHex(end)}` : `U+${toHex(start)}`)
+    ranges.push(end > start
+      ? `U+${toHex(start)}-${toHex(end)}`
+      : `U+${toHex(start)}`)
   }
   return ranges
 }
@@ -93,7 +105,9 @@ export function withoutVariationSettings(value: string | undefined, tags: Iterab
   const remaining = (value?.split(',') ?? [])
     .map(entry => entry.trim())
     .filter(entry => entry !== '' && !removed.has(/^["']([^"']+)["']/.exec(entry)?.[1] as string))
-  return remaining.length > 0 ? remaining.join(', ') : undefined
+  return remaining.length > 0
+    ? remaining.join(', ')
+    : undefined
 }
 
 /** Express requested axis values the way `unifont` reports them back. */
@@ -107,8 +121,14 @@ export function normalizeAxisValues(variableAxis: VariableAxisOptions): Resolved
       values: values.map(value => typeof value === 'number' || typeof value === 'string'
         ? String(value)
         : Array.isArray(value)
-          ? [String(value[0]), String(value[1])]
-          : [String(value.min), String(value.max)]),
+          ? [
+              String(value[0]),
+              String(value[1]),
+            ]
+          : [
+              String(value.min),
+              String(value.max),
+            ]),
       appliedAs: 'none',
     }
   }
@@ -123,11 +143,15 @@ function toVariationAxis(values: Array<string | [string, string]>): VariationAxe
   const value = values[0]!
   if (!Array.isArray(value)) {
     const pin = Number(value)
-    return Number.isFinite(pin) ? pin : undefined
+    return Number.isFinite(pin)
+      ? pin
+      : undefined
   }
   const min = Number(value[0])
   const max = Number(value[1])
-  return Number.isFinite(min) && Number.isFinite(max) ? { min, max } : undefined
+  return Number.isFinite(min) && Number.isFinite(max)
+    ? { min, max }
+    : undefined
 }
 
 /**
@@ -150,7 +174,9 @@ export function resolveVariationAxes(variableAxis: ResolvedVariableAxisOptions):
       pinned.push(tag)
     }
   }
-  return Object.keys(axes).length > 0 ? { axes, pinned } : undefined
+  return Object.keys(axes).length > 0
+    ? { axes, pinned }
+    : undefined
 }
 
 /**
@@ -194,7 +220,9 @@ function parseUnicodeRangeEntry(entry: string): [start: number, end: number] | u
   const end = single
     ? Number.parseInt(rangeEnd ?? single, 16)
     : Number.parseInt(prefix! + 'F'.repeat(wildcards!.length), 16)
-  return end < start || end > MAX_CODEPOINT ? undefined : [start, end]
+  return end < start || end > MAX_CODEPOINT
+    ? undefined
+    : [start, end]
 }
 
 /**
@@ -226,7 +254,9 @@ export function mergeUnicodeRanges(faces: Array<{ unicodeRange?: string[] }>): s
       merged.push([start, end])
     }
   }
-  return merged.map(([start, end]) => end > start ? `U+${toHex(start)}-${toHex(end)}` : `U+${toHex(start)}`)
+  return merged.map(([start, end]) => end > start
+    ? `U+${toHex(start)}-${toHex(end)}`
+    : `U+${toHex(start)}`)
 }
 
 type Subsetter = typeof import('subset-font')
@@ -283,7 +313,9 @@ export interface SubsetFontResult {
  */
 export async function subsetFontData(font: Buffer, text: string, url: string, variationAxes?: VariationAxes): Promise<SubsetFontResult> {
   const subsetFont = await loadSubsetter()
-  const axes = variationAxes && Object.keys(variationAxes).length > 0 ? variationAxes : undefined
+  const axes = variationAxes && Object.keys(variationAxes).length > 0
+    ? variationAxes
+    : undefined
   if (axes) {
     try {
       return { data: await subsetFont(font, text, { variationAxes: axes }), fallback: false }

@@ -17,7 +17,11 @@ afterAll(async () => {
   await Promise.all(outDirs.map(dir => fsp.rm(dir, { recursive: true, force: true })))
 })
 
-async function buildApp({ plugins = [], ...config }: Omit<InlineConfig, 'root' | 'configFile' | 'logLevel'>, fontlessOptions: FontlessOptions = { families: [{ name: 'Poppins', preload: true }] }) {
+async function buildApp({ plugins = [], ...config }: Omit<InlineConfig, 'root' | 'configFile' | 'logLevel'>, fontlessOptions: FontlessOptions = {
+  families: [
+    { name: 'Poppins', preload: true },
+  ],
+}) {
   const outDir = await fsp.mkdtemp(join(tmpdir(), 'fontless-base-'))
   outDirs.push(outDir)
 
@@ -26,7 +30,10 @@ async function buildApp({ plugins = [], ...config }: Omit<InlineConfig, 'root' |
     root,
     configFile: false,
     logLevel: 'silent',
-    plugins: [fontless(fontlessOptions), plugins],
+    plugins: [
+      fontless(fontlessOptions),
+      plugins,
+    ],
     build: { ...config.build, outDir, emptyOutDir: true },
   })
 
@@ -45,7 +52,9 @@ async function buildApp({ plugins = [], ...config }: Omit<InlineConfig, 'root' |
 it.each(['./', ''])('should emit font URLs relative to the CSS chunk for base %s', { timeout: 20_000 }, async (base) => {
   const { outDir, css, fonts } = await buildApp({ base })
 
-  const urls = [...css.matchAll(/url\((\.[^)]+\.woff2)\)/g)].map(([, url]) => url!)
+  const urls = [
+    ...css.matchAll(/url\((\.[^)]+\.woff2)\)/g),
+  ].map(([, url]) => url!)
   expect(urls.length).toBeGreaterThan(0)
 
   for (const url of urls) {
@@ -57,17 +66,27 @@ it.each(['./', ''])('should emit font URLs relative to the CSS chunk for base %s
 it('should reuse fonts referenced from more than one stylesheet', { timeout: 20_000 }, async () => {
   const extraCSS = '.extra { font-family: "Poppins", sans-serif; }'
   const { outDir, css, fonts } = await buildApp({
-    plugins: [{
-      name: 'extra-css',
-      resolveId: id => id === 'virtual:extra.css' ? '\0virtual:extra.css' : undefined,
-      load: id => id === '\0virtual:extra.css' ? extraCSS : undefined,
-      transform: (code, id) => id.endsWith('main.ts') ? `import 'virtual:extra.css'\n${code}` : undefined,
-    }],
+    plugins: [
+      {
+        name: 'extra-css',
+        resolveId: id => id === 'virtual:extra.css'
+          ? '\0virtual:extra.css'
+          : undefined,
+        load: id => id === '\0virtual:extra.css'
+          ? extraCSS
+          : undefined,
+        transform: (code, id) => id.endsWith('main.ts')
+          ? `import 'virtual:extra.css'\n${code}`
+          : undefined,
+      },
+    ],
   })
 
   expect(css).toContain('.extra{')
 
-  const urls = new Set([...css.matchAll(/url\((\/assets\/_fonts\/[^)]+\.woff2)\)/g)].map(([, url]) => url!.slice(1)))
+  const urls = new Set([
+    ...css.matchAll(/url\((\/assets\/_fonts\/[^)]+\.woff2)\)/g),
+  ].map(([, url]) => url!.slice(1)))
   expect(urls.size).toBeGreaterThan(0)
   expect(fonts).toEqual(expect.arrayContaining([...urls]))
 
@@ -80,7 +99,9 @@ it('should apply experimental.renderBuiltUrl to font URLs', { timeout: 20_000 },
   const { css, html } = await buildApp({
     experimental: {
       renderBuiltUrl(filename, { hostType }) {
-        return filename.includes('_fonts') ? `https://cdn.example.com/${filename}` : { relative: hostType !== 'html' }
+        return filename.includes('_fonts')
+          ? `https://cdn.example.com/${filename}`
+          : { relative: hostType !== 'html' }
       },
     },
   })
@@ -94,10 +115,16 @@ it('should apply experimental.renderBuiltUrl to global font URLs', { timeout: 20
   const { html } = await buildApp({
     experimental: {
       renderBuiltUrl(filename, { hostType }) {
-        return filename.includes('_fonts') ? `https://cdn.example.com/${filename}` : { relative: hostType !== 'html' }
+        return filename.includes('_fonts')
+          ? `https://cdn.example.com/${filename}`
+          : { relative: hostType !== 'html' }
       },
     },
-  }, { families: [{ name: 'Poppins', global: true, preload: true }] })
+  }, {
+    families: [
+      { name: 'Poppins', global: true, preload: true },
+    ],
+  })
 
   expect(html).toContain('url(https://cdn.example.com/assets/_fonts')
   expect(html).not.toContain('url(/assets/_fonts')
@@ -105,9 +132,15 @@ it('should apply experimental.renderBuiltUrl to global font URLs', { timeout: 20
 })
 
 it.each(['./', ''])('should emit global font URLs relative to the HTML for base %s', { timeout: 20_000 }, async (base) => {
-  const { outDir, html, fonts } = await buildApp({ base }, { families: [{ name: 'Poppins', global: true }] })
+  const { outDir, html, fonts } = await buildApp({ base }, {
+    families: [
+      { name: 'Poppins', global: true },
+    ],
+  })
 
-  const urls = [...html.matchAll(/url\((\.[^)]+\.woff2)\)/g)].map(([, url]) => url!)
+  const urls = [
+    ...html.matchAll(/url\((\.[^)]+\.woff2)\)/g),
+  ].map(([, url]) => url!)
   expect(urls.length).toBeGreaterThan(0)
 
   for (const url of urls) {
@@ -117,7 +150,11 @@ it.each(['./', ''])('should emit global font URLs relative to the HTML for base 
 })
 
 it('should prefix global font URLs with the configured base', { timeout: 20_000 }, async () => {
-  const { html, fonts } = await buildApp({ base: '/build/' }, { families: [{ name: 'Poppins', global: true }] })
+  const { html, fonts } = await buildApp({ base: '/build/' }, {
+    families: [
+      { name: 'Poppins', global: true },
+    ],
+  })
 
   expect(html).toContain('url(/build/assets/_fonts')
   expect(fonts.some(file => file.endsWith('.woff2'))).toBe(true)
@@ -125,10 +162,14 @@ it('should prefix global font URLs with the configured base', { timeout: 20_000 
 
 it('should honour renderBuiltUrl returning a relative URL for fonts', { timeout: 20_000 }, async () => {
   const { outDir, css, fonts } = await buildApp({
-    experimental: { renderBuiltUrl: () => ({ relative: true }) },
+    experimental: {
+      renderBuiltUrl: () => ({ relative: true }),
+    },
   })
 
-  const urls = [...css.matchAll(/url\((\.[^)]+\.woff2)\)/g)].map(([, url]) => url!)
+  const urls = [
+    ...css.matchAll(/url\((\.[^)]+\.woff2)\)/g),
+  ].map(([, url]) => url!)
   expect(urls.length).toBeGreaterThan(0)
 
   for (const url of urls) {
@@ -148,7 +189,9 @@ it('should prefix font URLs with the configured base', { timeout: 20_000 }, asyn
 it('should emit font URLs from the server root by default', { timeout: 20_000 }, async () => {
   const { outDir, css, fonts } = await buildApp({})
 
-  const urls = [...css.matchAll(/url\((\/assets\/_fonts\/[^)]+\.woff2)\)/g)].map(([, url]) => url!)
+  const urls = [
+    ...css.matchAll(/url\((\/assets\/_fonts\/[^)]+\.woff2)\)/g),
+  ].map(([, url]) => url!)
   expect(urls.length).toBeGreaterThan(0)
 
   for (const url of urls) {
@@ -163,7 +206,9 @@ it.each(['/', '/build/'])('should serve fonts under base %s in dev', { timeout: 
     base,
     configFile: false,
     logLevel: 'silent',
-    plugins: [fontless()],
+    plugins: [
+      fontless(),
+    ],
     server: { host: '127.0.0.1', port: 0 },
   })
 
@@ -203,7 +248,9 @@ it('should fail the build if a font cannot be downloaded', { timeout: 20_000 }, 
 
   try {
     await expect(buildApp({}, {
-      families: [{ name: 'Poppins', src: `http://127.0.0.1:${port}/missing.woff2` }],
+      families: [
+        { name: 'Poppins', src: `http://127.0.0.1:${port}/missing.woff2` },
+      ],
     })).rejects.toThrow(/404/)
   }
   finally {

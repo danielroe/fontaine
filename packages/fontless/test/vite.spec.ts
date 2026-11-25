@@ -25,7 +25,16 @@ function createStubProvider(url = '/inter.woff2', name = 'stub') {
     receivedOptions.push(providerOptions)
     return Object.assign(
       (_ctx: ProviderContext) => ({
-        resolveFont: () => ({ fonts: [{ src: [{ url, format: 'woff2' }], weight: 400 }] }),
+        resolveFont: () => ({
+          fonts: [
+            {
+              src: [
+                { url, format: 'woff2' },
+              ],
+              weight: 400,
+            },
+          ],
+        }),
       }),
       { _name: name, _options: {} },
     ) as unknown as Provider
@@ -45,7 +54,11 @@ const html = '<!doctype html><html><head><link rel="stylesheet" href="/style.css
 const styles = `body { font-family: 'Inter' }`
 
 function withStub(options: FontlessOptions = {}): FontlessOptions {
-  return { provider: 'stub', providers: { stub: createStubProvider().provider }, ...options }
+  return {
+    provider: 'stub',
+    providers: { stub: createStubProvider().provider },
+    ...options,
+  }
 }
 
 async function buildApp(root: string, options: FontlessOptions = {}, config: InlineConfig = {}) {
@@ -57,7 +70,9 @@ async function buildApp(root: string, options: FontlessOptions = {}, config: Inl
     root,
     configFile: false,
     logLevel: 'silent',
-    plugins: [fontless(withStub(options))],
+    plugins: [
+      fontless(withStub(options)),
+    ],
     build: { ...config.build, outDir, emptyOutDir: true },
   })
 
@@ -68,22 +83,36 @@ async function buildApp(root: string, options: FontlessOptions = {}, config: Inl
   return {
     outDir,
     files,
-    css: cssFile ? await fsp.readFile(join(outDir, cssFile), 'utf-8') : '',
-    html: htmlFile ? await fsp.readFile(join(outDir, htmlFile), 'utf-8') : '',
+    css: cssFile
+      ? await fsp.readFile(join(outDir, cssFile), 'utf-8')
+      : '',
+    html: htmlFile
+      ? await fsp.readFile(join(outDir, htmlFile), 'utf-8')
+      : '',
   }
 }
 
 describe('fontless vite plugin', () => {
   it('should tolerate `resolve.alias` given as an array', async () => {
     const root = await createFixture({ 'index.html': html, 'style.css': styles })
-    const { css } = await buildApp(root, {}, { resolve: { alias: [{ find: '@', replacement: root }] } })
+    const { css } = await buildApp(root, {}, {
+      resolve: {
+        alias: [
+          { find: '@', replacement: root },
+        ],
+      },
+    })
 
     expect(css).toContain('@font-face')
   })
 
   it('should inject `@font-face` into the HTML for families declared `global`', async () => {
     const root = await createFixture({ 'index.html': html, 'style.css': styles })
-    const { css, html: output } = await buildApp(root, { families: [{ name: 'Inter', global: true }] })
+    const { css, html: output } = await buildApp(root, {
+      families: [
+        { name: 'Inter', global: true },
+      ],
+    })
 
     expect(css).not.toContain('font-family:Inter;src:')
     expect(output).toContain('<style type="text/css">@font-face{font-family:Inter;src:')
@@ -92,7 +121,11 @@ describe('fontless vite plugin', () => {
   it('should emit fonts referenced only by the global `@font-face` declarations', async () => {
     const root = await createFixture({ 'index.html': html, 'style.css': `body { color: red }` })
     const src = pathToFileURL(join(root, 'inter.woff2')).href
-    const { html: output, files } = await buildApp(root, { families: [{ name: 'Inter', global: true, src }] })
+    const { html: output, files } = await buildApp(root, {
+      families: [
+        { name: 'Inter', global: true, src },
+      ],
+    })
 
     const font = files.find(file => file.includes('_fonts/'))
     expect(font).toBeDefined()
@@ -101,7 +134,11 @@ describe('fontless vite plugin', () => {
 
   it('should inject `@font-face` for a `global` family that is never used in CSS', async () => {
     const root = await createFixture({ 'index.html': html, 'style.css': `body { color: red }` })
-    const { html: output } = await buildApp(root, { families: [{ name: 'Poppins', global: true }] })
+    const { html: output } = await buildApp(root, {
+      families: [
+        { name: 'Poppins', global: true },
+      ],
+    })
 
     expect(output).toContain('font-family:Poppins;src:')
   })
@@ -109,7 +146,9 @@ describe('fontless vite plugin', () => {
   it('should inject nothing when a `global` family resolves to no fonts', async () => {
     const root = await createFixture({ 'index.html': html, 'style.css': styles })
     const { html: output } = await buildApp(root, {
-      families: [{ name: 'Inter', global: true, provider: 'none' }],
+      families: [
+        { name: 'Inter', global: true, provider: 'none' },
+      ],
     })
 
     expect(output).not.toContain('<style')
@@ -118,7 +157,16 @@ describe('fontless vite plugin', () => {
   it('should not preload `global` fonts that have no remote source', async () => {
     const root = await createFixture({ 'index.html': html, 'style.css': styles })
     const { html: output } = await buildApp(root, {
-      families: [{ name: 'Inter', global: true, preload: true, src: [{ name: 'Inter Var' }] }],
+      families: [
+        {
+          name: 'Inter',
+          global: true,
+          preload: true,
+          src: [
+            { name: 'Inter Var' },
+          ],
+        },
+      ],
     })
 
     expect(output).toContain('local(Inter Var)')
@@ -128,7 +176,13 @@ describe('fontless vite plugin', () => {
   it('should still add fallback metrics at usage sites for `global` families', async () => {
     const root = await createFixture({ 'index.html': html, 'style.css': styles })
     const { css } = await buildApp(root, {
-      families: [{ name: 'Inter', global: true, fallbacks: ['Arial'] }],
+      families: [
+        {
+          name: 'Inter',
+          global: true,
+          fallbacks: ['Arial'],
+        },
+      ],
     })
 
     expect(css).toContain('Inter Fallback\\: Arial')
@@ -137,7 +191,9 @@ describe('fontless vite plugin', () => {
   it('should preload fonts for `global` families', async () => {
     const root = await createFixture({ 'index.html': html, 'style.css': `body { color: red }` })
     const { html: output } = await buildApp(root, {
-      families: [{ name: 'Inter', global: true, preload: true }],
+      families: [
+        { name: 'Inter', global: true, preload: true },
+      ],
     })
 
     expect(output).toContain('rel="preload"')
@@ -176,7 +232,15 @@ describe('fontless vite plugin', () => {
     it('should preload faces from every `src` entry', async () => {
       const { root, families } = await createMultiFaceFixture(`body { color: red }`)
       const { html: output } = await buildApp(root, {
-        families: [{ ...families[0]!, global: true }, { ...families[1]!, preload: { styles: ['normal'] } }],
+        families: [
+          { ...families[0]!, global: true },
+          {
+            ...families[1]!,
+            preload: {
+              styles: ['normal'],
+            },
+          },
+        ],
       })
 
       expect(output.match(/rel="preload"/g)).toHaveLength(2)
@@ -185,7 +249,9 @@ describe('fontless vite plugin', () => {
 
   it('should minify generated declarations with lightningcss when configured', async () => {
     const root = await createFixture({ 'index.html': html, 'style.css': styles })
-    const { css } = await buildApp(root, {}, { css: { transformer: 'lightningcss', lightningcss: {} } })
+    const { css } = await buildApp(root, {}, {
+      css: { transformer: 'lightningcss', lightningcss: {} },
+    })
 
     expect(css).toContain('@font-face{')
   })
@@ -208,7 +274,10 @@ describe('fontless vite plugin', () => {
     const root = await createFixture({ 'index.html': html, 'style.css': styles })
     const { provider, receivedOptions } = createStubProvider('/inter.woff2', 'npm')
 
-    await buildApp(root, { provider: 'npm', providers: { npm: provider } })
+    await buildApp(root, {
+      provider: 'npm',
+      providers: { npm: provider },
+    })
 
     const npmOptions = receivedOptions[0] as { root: string, readFile: (path: string) => Promise<string | null> }
     expect(npmOptions.root).toBe(root)
@@ -227,15 +296,28 @@ describe('fontless vite plugin', () => {
 
     const pkgDir = join(workspace, 'node_modules/@fake-fontsource/inter')
     await fsp.mkdir(pkgDir, { recursive: true })
-    await fsp.writeFile(join(pkgDir, 'package.json'), JSON.stringify({ name: '@fake-fontsource/inter', version: '1.0.0', exports: { './*': './*' } }))
+    await fsp.writeFile(join(pkgDir, 'package.json'), JSON.stringify({
+      name: '@fake-fontsource/inter',
+      version: '1.0.0',
+      exports: { './*': './*' },
+    }))
     await fsp.writeFile(join(pkgDir, 'index.css'), '')
 
     const { provider, receivedOptions } = createStubProvider('/inter.woff2', 'npm')
-    await buildApp(root, { provider: 'npm', providers: { npm: provider } })
+    await buildApp(root, {
+      provider: 'npm',
+      providers: { npm: provider },
+    })
 
     const styleDir = join(workspace, 'node_modules/@fake-fontsource/style-condition')
     await fsp.mkdir(styleDir, { recursive: true })
-    await fsp.writeFile(join(styleDir, 'package.json'), JSON.stringify({ name: '@fake-fontsource/style-condition', version: '1.0.0', exports: { './index.css': { style: './fonts.css', default: './index.js' } } }))
+    await fsp.writeFile(join(styleDir, 'package.json'), JSON.stringify({
+      name: '@fake-fontsource/style-condition',
+      version: '1.0.0',
+      exports: {
+        './index.css': { style: './fonts.css', default: './index.js' },
+      },
+    }))
     await fsp.writeFile(join(styleDir, 'fonts.css'), '')
 
     const npmOptions = receivedOptions[0] as { resolve: (id: string) => string }
@@ -248,7 +330,10 @@ describe('fontless vite plugin', () => {
     const root = await createFixture({ 'index.html': html, 'style.css': styles })
     const { provider, receivedOptions } = createStubProvider('/inter.woff2', 'npm')
 
-    await buildApp(root, { provider: 'npm', providers: { npm: provider } })
+    await buildApp(root, {
+      provider: 'npm',
+      providers: { npm: provider },
+    })
 
     const npmOptions = receivedOptions[0] as { exists: (path: string) => Promise<boolean> }
     expect(await npmOptions.exists(join(root, 'inter.woff2'))).toBe(true)
@@ -263,7 +348,11 @@ describe('fontless vite plugin', () => {
       configFile: false,
       logLevel: 'silent',
       server: { host: '127.0.0.1', port: 0 },
-      plugins: [fontless(withStub({ providers: { stub: provider } }))],
+      plugins: [
+        fontless(withStub({
+          providers: { stub: provider },
+        })),
+      ],
     })
 
     try {
@@ -283,7 +372,9 @@ describe('fontless vite plugin', () => {
   it('should emit fonts that providers resolve to local files', async () => {
     const root = await createFixture({ 'index.html': html, 'style.css': styles })
     const { provider } = createStubProvider(pathToFileURL(join(root, 'inter.woff2')).href)
-    const { outDir, files } = await buildApp(root, { providers: { stub: provider } })
+    const { outDir, files } = await buildApp(root, {
+      providers: { stub: provider },
+    })
 
     const font = files.find(file => file.endsWith('.woff2'))
     expect(font).toBeTruthy()
@@ -293,7 +384,10 @@ describe('fontless vite plugin', () => {
   it.each(['/fonts', 'fonts', './fonts/'])('should emit fonts into the `%s` assets prefix', async (prefix) => {
     const root = await createFixture({ 'index.html': html, 'style.css': styles })
     const { provider } = createStubProvider(pathToFileURL(join(root, 'inter.woff2')).href)
-    const { css, files } = await buildApp(root, { providers: { stub: provider }, assets: { prefix } })
+    const { css, files } = await buildApp(root, {
+      providers: { stub: provider },
+      assets: { prefix },
+    })
 
     const font = files.find(file => file.endsWith('.woff2'))
     expect(font).toMatch(/^fonts\/[^/]+\.woff2$/)
@@ -308,7 +402,11 @@ describe('fontless vite plugin', () => {
       configFile: false,
       logLevel: 'silent',
       server: { host: '127.0.0.1', port: 0 },
-      plugins: [fontless(withStub({ providers: { stub: provider } }))],
+      plugins: [
+        fontless(withStub({
+          providers: { stub: provider },
+        })),
+      ],
     })
 
     try {
@@ -340,7 +438,9 @@ describe('fontless vite plugin', () => {
     const root = await createFixture({ 'index.html': html, 'style.css': styles })
     const entry: Plugin = {
       name: 'test-runtime-entry',
-      resolveId: source => source === 'virtual:entry' ? '\0virtual:entry' : undefined,
+      resolveId: source => source === 'virtual:entry'
+        ? '\0virtual:entry'
+        : undefined,
       load: id => id === '\0virtual:entry'
         ? `import '/style.css'\nimport { preloads } from 'fontless/runtime'\nexport { preloads }`
         : undefined,
@@ -353,8 +453,21 @@ describe('fontless vite plugin', () => {
       root,
       configFile: false,
       logLevel: 'silent',
-      plugins: [fontless(withStub({ families: [{ name: 'Inter', preload: true }] })), entry],
-      build: { outDir, emptyOutDir: true, rollupOptions: { input: { entry: 'virtual:entry' } } },
+      plugins: [
+        fontless(withStub({
+          families: [
+            { name: 'Inter', preload: true },
+          ],
+        })),
+        entry,
+      ],
+      build: {
+        outDir,
+        emptyOutDir: true,
+        rollupOptions: {
+          input: { entry: 'virtual:entry' },
+        },
+      },
     })
 
     const files = await Array.fromAsync(fsp.glob('**/*', { cwd: outDir }))

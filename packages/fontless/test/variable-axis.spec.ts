@@ -20,40 +20,101 @@ function createContext(): NormalizeFontDataContext {
 
 function renderFace(face: Partial<FontFaceData>, options: NormalizeFontDataOptions = {}) {
   const context = createContext()
-  const [rendered] = normalizeFontData(context, [{
-    src: [{ url: 'https://fonts.example.com/font.woff2', format: 'woff2' }],
-    ...face,
-  }], options)
-  return { face: rendered!, emitted: [...context.renderedFontURLs.entries()][0]! }
+  const [rendered] = normalizeFontData(context, [
+    {
+      src: [
+        { url: 'https://fonts.example.com/font.woff2', format: 'woff2' },
+      ],
+      ...face,
+    },
+  ], options)
+  return { face: rendered!, emitted: [
+    ...context.renderedFontURLs.entries(),
+  ][0]! }
 }
 
 describe('resolveVariationAxes', () => {
   it('should pin an axis `unifont` applied as a descriptor', () => {
-    expect(resolveVariationAxes({ CASL: { values: ['1'], appliedAs: 'variation-settings' } }))
-      .toEqual({ axes: { CASL: 1 }, pinned: ['CASL'] })
+    expect(resolveVariationAxes({
+      CASL: {
+        values: ['1'],
+        appliedAs: 'variation-settings',
+      },
+    }))
+      .toEqual({
+        axes: { CASL: 1 },
+        pinned: ['CASL'],
+      })
   })
 
   it('should leave an axis the provider instanced itself alone', () => {
-    expect(resolveVariationAxes({ CASL: { values: ['1'], appliedAs: 'font-file' } })).toBeUndefined()
+    expect(resolveVariationAxes({
+      CASL: {
+        values: ['1'],
+        appliedAs: 'font-file',
+      },
+    })).toBeUndefined()
   })
 
   it('should apply an axis nothing has applied yet, keeping the CSS as it is', () => {
-    expect(resolveVariationAxes({ MONO: { values: [['0', '1']], appliedAs: 'none' } }))
-      .toEqual({ axes: { MONO: { min: 0, max: 1 } }, pinned: [] })
+    expect(resolveVariationAxes({
+      MONO: {
+        values: [
+          ['0', '1'],
+        ],
+        appliedAs: 'none',
+      },
+    }))
+      .toEqual({
+        axes: {
+          MONO: { min: 0, max: 1 },
+        },
+        pinned: [],
+      })
   })
 
   it('should leave axes expressed by `@font-face` descriptors alone', () => {
     expect(resolveVariationAxes({
-      wght: { values: ['700'], appliedAs: 'none' },
-      ital: { values: ['1'], appliedAs: 'none' },
+      wght: {
+        values: ['700'],
+        appliedAs: 'none',
+      },
+      ital: {
+        values: ['1'],
+        appliedAs: 'none',
+      },
     })).toBeUndefined()
   })
 
   it('should leave multi-value and non-numeric axes alone', () => {
-    expect(resolveVariationAxes({ CASL: { values: ['0', '1'], appliedAs: 'none' } })).toBeUndefined()
-    expect(resolveVariationAxes({ CASL: { values: ['casual'], appliedAs: 'variation-settings' } })).toBeUndefined()
-    expect(resolveVariationAxes({ MONO: { values: [['casual', '1']], appliedAs: 'none' } })).toBeUndefined()
-    expect(resolveVariationAxes({ MONO: { values: [['0', 'mono']], appliedAs: 'none' } })).toBeUndefined()
+    expect(resolveVariationAxes({
+      CASL: {
+        values: ['0', '1'],
+        appliedAs: 'none',
+      },
+    })).toBeUndefined()
+    expect(resolveVariationAxes({
+      CASL: {
+        values: ['casual'],
+        appliedAs: 'variation-settings',
+      },
+    })).toBeUndefined()
+    expect(resolveVariationAxes({
+      MONO: {
+        values: [
+          ['casual', '1'],
+        ],
+        appliedAs: 'none',
+      },
+    })).toBeUndefined()
+    expect(resolveVariationAxes({
+      MONO: {
+        values: [
+          ['0', 'mono'],
+        ],
+        appliedAs: 'none',
+      },
+    })).toBeUndefined()
   })
 
   it('should apply nothing when there is no resolution to act on', () => {
@@ -63,10 +124,31 @@ describe('resolveVariationAxes', () => {
 
 describe('normalizeAxisValues', () => {
   it('should express numbers, tuples and objects the way unifont reports them', () => {
-    expect(normalizeAxisValues({ CASL: [1], MONO: [[0, 1]], slnt: [{ min: -15, max: 0 }] })).toEqual({
-      CASL: { values: ['1'], appliedAs: 'none' },
-      MONO: { values: [['0', '1']], appliedAs: 'none' },
-      slnt: { values: [['-15', '0']], appliedAs: 'none' },
+    expect(normalizeAxisValues({
+      CASL: [1],
+      MONO: [
+        [0, 1],
+      ],
+      slnt: [
+        { min: -15, max: 0 },
+      ],
+    })).toEqual({
+      CASL: {
+        values: ['1'],
+        appliedAs: 'none',
+      },
+      MONO: {
+        values: [
+          ['0', '1'],
+        ],
+        appliedAs: 'none',
+      },
+      slnt: {
+        values: [
+          ['-15', '0'],
+        ],
+        appliedAs: 'none',
+      },
     })
   })
 
@@ -142,7 +224,12 @@ describe('variable axis instancing', () => {
   it('should instance a font it can subset, dropping the axis from the CSS', () => {
     const { face, emitted } = renderFace({ variationSettings: '"CASL" 1, "MONO" 0' }, {
       glyphs: 'Hand',
-      variableAxis: { CASL: { values: ['1'], appliedAs: 'variation-settings' } },
+      variableAxis: {
+        CASL: {
+          values: ['1'],
+          appliedAs: 'variation-settings',
+        },
+      },
     })
 
     expect(emitted[1].variationAxes).toEqual({ CASL: 1 })
@@ -151,17 +238,35 @@ describe('variable axis instancing', () => {
   })
 
   it('should narrow an axis nothing has applied yet, keeping the CSS as it is', () => {
-    const { face, emitted } = renderFace({ unicodeRange: ['U+0041'] }, {
-      variableAxis: { MONO: { values: [['0', '1']], appliedAs: 'none' } },
+    const { face, emitted } = renderFace({
+      unicodeRange: ['U+0041'],
+    }, {
+      variableAxis: {
+        MONO: {
+          values: [
+            ['0', '1'],
+          ],
+          appliedAs: 'none',
+        },
+      },
     })
 
-    expect(emitted[1].variationAxes).toEqual({ MONO: { min: 0, max: 1 } })
+    expect(emitted[1].variationAxes).toEqual({
+      MONO: { min: 0, max: 1 },
+    })
     expect(face.variationSettings).toBeUndefined()
   })
 
   it('should leave the font alone when the provider instanced it already', () => {
-    const { face, emitted } = renderFace({ unicodeRange: ['U+0041'] }, {
-      variableAxis: { CASL: { values: ['1'], appliedAs: 'font-file' } },
+    const { face, emitted } = renderFace({
+      unicodeRange: ['U+0041'],
+    }, {
+      variableAxis: {
+        CASL: {
+          values: ['1'],
+          appliedAs: 'font-file',
+        },
+      },
     })
 
     expect(emitted[1].variationAxes).toBeUndefined()
@@ -170,8 +275,16 @@ describe('variable axis instancing', () => {
   })
 
   it('should derive the glyphs to subset to from the face\'s unicode range', () => {
-    const { emitted } = renderFace({ unicodeRange: ['U+0041-0042'], variationSettings: '"CASL" 1' }, {
-      variableAxis: { CASL: { values: ['1'], appliedAs: 'variation-settings' } },
+    const { emitted } = renderFace({
+      unicodeRange: ['U+0041-0042'],
+      variationSettings: '"CASL" 1',
+    }, {
+      variableAxis: {
+        CASL: {
+          values: ['1'],
+          appliedAs: 'variation-settings',
+        },
+      },
     })
 
     expect(emitted[1].subset).toBe('AB')
@@ -179,17 +292,33 @@ describe('variable axis instancing', () => {
   })
 
   it('should derive the glyphs to subset to from a comma-separated unicode range', () => {
-    const { emitted } = renderFace({ unicodeRange: ['U+0041-0042, U+0061'] }, {
-      variableAxis: { wdth: { values: [['100', '125']], appliedAs: 'none' } },
+    const { emitted } = renderFace({
+      unicodeRange: ['U+0041-0042, U+0061'],
+    }, {
+      variableAxis: {
+        wdth: {
+          values: [
+            ['100', '125'],
+          ],
+          appliedAs: 'none',
+        },
+      },
     })
 
     expect(emitted[1].subset).toBe('ABa')
-    expect(emitted[1].variationAxes).toEqual({ wdth: { min: 100, max: 125 } })
+    expect(emitted[1].variationAxes).toEqual({
+      wdth: { min: 100, max: 125 },
+    })
   })
 
   it('should leave the font and CSS alone when there are no glyphs to subset to', () => {
     const { face, emitted } = renderFace({ variationSettings: '"CASL" 1' }, {
-      variableAxis: { CASL: { values: ['1'], appliedAs: 'variation-settings' } },
+      variableAxis: {
+        CASL: {
+          values: ['1'],
+          appliedAs: 'variation-settings',
+        },
+      },
     })
 
     expect(emitted[1].subset).toBeUndefined()
@@ -199,20 +328,60 @@ describe('variable axis instancing', () => {
 
   it('should emit one file per unicode range for the same source font', () => {
     const context = createContext()
-    const face = (unicodeRange: string[]) => ({ src: [{ url: 'https://fonts.example.com/font.woff2', format: 'woff2' }], unicodeRange })
-    const variableAxis: ResolvedVariableAxisOptions = { CASL: { values: ['1'], appliedAs: 'variation-settings' } }
-    normalizeFontData(context, [face(['U+0041'])], { variableAxis })
-    normalizeFontData(context, [face(['U+0042'])], { variableAxis })
+    const face = (unicodeRange: string[]) => ({
+      src: [
+        { url: 'https://fonts.example.com/font.woff2', format: 'woff2' },
+      ],
+      unicodeRange,
+    })
+    const variableAxis: ResolvedVariableAxisOptions = {
+      CASL: {
+        values: ['1'],
+        appliedAs: 'variation-settings',
+      },
+    }
+    normalizeFontData(context, [
+      face(['U+0041']),
+    ], { variableAxis })
+    normalizeFontData(context, [
+      face(['U+0042']),
+    ], { variableAxis })
 
     expect(context.renderedFontURLs.size).toBe(2)
   })
 
   it('should emit one file per set of axis values for the same source font', () => {
     const context = createContext()
-    const face = () => ({ src: [{ url: 'https://fonts.example.com/font.woff2', format: 'woff2' }], unicodeRange: ['U+0041'], variationSettings: '"CASL" 1' })
-    normalizeFontData(context, [face()], { variableAxis: { CASL: { values: ['1'], appliedAs: 'variation-settings' } } })
-    normalizeFontData(context, [face()], { variableAxis: { CASL: { values: ['0'], appliedAs: 'variation-settings' } } })
-    normalizeFontData(context, [face()])
+    const face = () => ({
+      src: [
+        { url: 'https://fonts.example.com/font.woff2', format: 'woff2' },
+      ],
+      unicodeRange: ['U+0041'],
+      variationSettings: '"CASL" 1',
+    })
+    normalizeFontData(context, [
+      face(),
+    ], {
+      variableAxis: {
+        CASL: {
+          values: ['1'],
+          appliedAs: 'variation-settings',
+        },
+      },
+    })
+    normalizeFontData(context, [
+      face(),
+    ], {
+      variableAxis: {
+        CASL: {
+          values: ['0'],
+          appliedAs: 'variation-settings',
+        },
+      },
+    })
+    normalizeFontData(context, [
+      face(),
+    ])
 
     expect(context.renderedFontURLs.size).toBe(3)
   })
@@ -223,7 +392,9 @@ describe('subsetFontData with variation axes', () => {
     const font = await fsp.readFile(fixture)
     const subset = await subsetFontData(font, 'Hand', fixture)
     const pinned = await subsetFontData(font, 'Hand', fixture, { CASL: 1 })
-    const narrowed = await subsetFontData(font, 'Hand', fixture, { MONO: { min: 0, max: 1 } })
+    const narrowed = await subsetFontData(font, 'Hand', fixture, {
+      MONO: { min: 0, max: 1 },
+    })
 
     expect(subset.data).not.toEqual(font)
     expect(pinned.data).toEqual(subset.data)
@@ -249,7 +420,16 @@ describe('variableAxis option', () => {
     const provider = () => {
       const resolveFont: InitializedProvider['resolveFont'] = async (family, options) => {
         calls.push({ family, options })
-        return { fonts: [{ src: [{ url: '/font.woff2', format: 'woff2' }] }], ...result }
+        return {
+          fonts: [
+            {
+              src: [
+                { url: '/font.woff2', format: 'woff2' },
+              ],
+            },
+          ],
+          ...result,
+        }
       }
       return Object.assign((_ctx: ProviderContext) => Promise.resolve({ resolveFont }), {
         _name: name,
@@ -273,8 +453,17 @@ describe('variableAxis option', () => {
           faces.push(...data)
           return data
         }
-        const src = Array.isArray(data.src) ? data.src : [data.src]
-        return [{ ...data, src: src.map(source => typeof source === 'string' ? { url: source } : source) } as FontFaceData]
+        const src = Array.isArray(data.src)
+          ? data.src
+          : [data.src]
+        return [
+          {
+            ...data,
+            src: src.map(source => typeof source === 'string'
+              ? { url: source }
+              : source),
+          } as FontFaceData,
+        ]
       },
     })
 
@@ -288,34 +477,110 @@ describe('variableAxis option', () => {
   }
 
   it('should pass a family\'s requested axes to unifont, which normalises them', async () => {
-    const { calls } = await resolveWith({}, { name: 'TestFont', variableAxis: { CASL: [1] } })
+    const { calls } = await resolveWith({}, {
+      name: 'TestFont',
+      variableAxis: {
+        CASL: [1],
+      },
+    })
 
-    expect(requestedAxes(calls)).toEqual({ CASL: ['1'] })
+    expect(requestedAxes(calls)).toEqual({
+      CASL: ['1'],
+    })
   })
 
   it('should prefer a family\'s axes over the default', async () => {
-    const withDefault = await resolveWith({ defaults: { variableAxis: { CASL: [1] } } }, { name: 'TestFont' })
-    const withOverride = await resolveWith({ defaults: { variableAxis: { CASL: [1] } } }, { name: 'TestFont', variableAxis: { MONO: [{ min: 0, max: 1 }] } })
+    const withDefault = await resolveWith({
+      defaults: {
+        variableAxis: {
+          CASL: [1],
+        },
+      },
+    }, { name: 'TestFont' })
+    const withOverride = await resolveWith({
+      defaults: {
+        variableAxis: {
+          CASL: [1],
+        },
+      },
+    }, {
+      name: 'TestFont',
+      variableAxis: {
+        MONO: [
+          { min: 0, max: 1 },
+        ],
+      },
+    })
     const withNothing = await resolveWith({})
 
-    expect(requestedAxes(withDefault.calls)).toEqual({ CASL: ['1'] })
-    expect(requestedAxes(withOverride.calls)).toEqual({ MONO: [['0', '1']] })
+    expect(requestedAxes(withDefault.calls)).toEqual({
+      CASL: ['1'],
+    })
+    expect(requestedAxes(withOverride.calls)).toEqual({
+      MONO: [
+        ['0', '1'],
+      ],
+    })
     expect(requestedAxes(withNothing.calls)).toBeUndefined()
   })
 
   it('should pass on how unifont resolved each axis', async () => {
-    const { resolved } = await resolveWith({}, { name: 'TestFont', variableAxis: { MONO: [{ min: 0, max: 1 }] } }, {
-      appliedVariableAxis: { MONO: [['0', '1']] },
+    const { resolved } = await resolveWith({}, {
+      name: 'TestFont',
+      variableAxis: {
+        MONO: [
+          { min: 0, max: 1 },
+        ],
+      },
+    }, {
+      appliedVariableAxis: {
+        MONO: [
+          ['0', '1'],
+        ],
+      },
     })
 
-    expect(resolved).toEqual([{ MONO: { values: [['0', '1']], appliedAs: 'font-file' } }])
+    expect(resolved).toEqual([
+      {
+        MONO: {
+          values: [
+            ['0', '1'],
+          ],
+          appliedAs: 'font-file',
+        },
+      },
+    ])
   })
 
   it('should take the descriptor unifont wrote, over any the provider wrote itself', async () => {
-    const applied = [{ CASL: { values: ['1'], appliedAs: 'variation-settings' } }]
-    const withoutOwn = await resolveWith({}, { name: 'TestFont', variableAxis: { CASL: [1] } })
-    const withOwn = await resolveWith({}, { name: 'TestFont', variableAxis: { CASL: [1] } }, {
-      fonts: [{ src: [{ url: '/font.woff2', format: 'woff2' }], variationSettings: '"CASL" 0' }],
+    const applied = [
+      {
+        CASL: {
+          values: ['1'],
+          appliedAs: 'variation-settings',
+        },
+      },
+    ]
+    const withoutOwn = await resolveWith({}, {
+      name: 'TestFont',
+      variableAxis: {
+        CASL: [1],
+      },
+    })
+    const withOwn = await resolveWith({}, {
+      name: 'TestFont',
+      variableAxis: {
+        CASL: [1],
+      },
+    }, {
+      fonts: [
+        {
+          src: [
+            { url: '/font.woff2', format: 'woff2' },
+          ],
+          variationSettings: '"CASL" 0',
+        },
+      ],
     })
 
     expect([withoutOwn.resolved, withOwn.resolved]).toEqual([applied, applied])
@@ -331,10 +596,19 @@ describe('variableAxis option', () => {
   it('should treat every requested axis as its own for manually configured sources', async () => {
     const { resolved } = await resolveWith({}, {
       name: 'TestFont',
-      variableAxis: { CASL: [1] },
+      variableAxis: {
+        CASL: [1],
+      },
       src: '/font.woff2',
     } as unknown as FontFamilyProviderOverride)
 
-    expect(resolved).toEqual([{ CASL: { values: ['1'], appliedAs: 'none' } }])
+    expect(resolved).toEqual([
+      {
+        CASL: {
+          values: ['1'],
+          appliedAs: 'none',
+        },
+      },
+    ])
   })
 })

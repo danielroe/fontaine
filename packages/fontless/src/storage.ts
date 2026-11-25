@@ -69,7 +69,9 @@ function createFsStorage(base: string): FontlessStorage {
       }
     },
     setItem(key, value) {
-      return write(keyToPath(base, key), typeof value === 'string' ? value : JSON.stringify(value))
+      return write(keyToPath(base, key), typeof value === 'string'
+        ? value
+        : JSON.stringify(value))
     },
     getItemRaw(key) {
       return read(keyToPath(base, key))
@@ -90,7 +92,9 @@ export function createFontlessStorage(cache?: FontlessOptions['cache'], context:
   }
 
   const root = context.root ?? cwd()
-  const dir = typeof cache === 'string' ? cache : cache?.dir
+  const dir = typeof cache === 'string'
+    ? cache
+    : cache?.dir
 
   const base = dir
     ? resolve(root, dir)

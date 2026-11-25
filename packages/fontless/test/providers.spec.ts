@@ -5,9 +5,14 @@ import { createJiti } from 'jiti'
 import { describe, expect, it, vi } from 'vitest'
 import { resolveProviders } from '../src/providers'
 
-vi.mock('jiti', () => ({ createJiti: vi.fn() }))
+vi.mock('jiti', () => ({
+  createJiti: vi.fn(),
+}))
 
-const opts = { root: tmpdir(), alias: {} }
+const opts = {
+  root: tmpdir(),
+  alias: {},
+}
 
 describe('resolveProviders', () => {
   it('should default to an empty set of providers', async () => {
@@ -15,7 +20,9 @@ describe('resolveProviders', () => {
   })
 
   it('should keep provider factories as-is', async () => {
-    const provider = () => ({ resolveFont: () => undefined })
+    const provider = () => ({
+      resolveFont: () => undefined,
+    })
 
     expect(await resolveProviders({ custom: provider as any }, opts)).toEqual({ custom: provider })
   })
@@ -34,8 +41,12 @@ describe('resolveProviders', () => {
   })
 
   it('should fall back to jiti for providers node cannot load', async () => {
-    const provider = () => ({ resolveFont: () => undefined })
-    vi.mocked(createJiti).mockReturnValue({ import: () => Promise.resolve(provider) } as unknown as ReturnType<typeof createJiti>)
+    const provider = () => ({
+      resolveFont: () => undefined,
+    })
+    vi.mocked(createJiti).mockReturnValue({
+      import: () => Promise.resolve(provider),
+    } as unknown as ReturnType<typeof createJiti>)
 
     const providers = await resolveProviders({ custom: './does-not-exist.ts' }, opts)
 
@@ -63,7 +74,10 @@ describe('resolveProviders', () => {
 
     const providers = await resolveProviders(
       { custom: '#providers/provider.mjs' },
-      { root, alias: { '#providers': root } },
+      {
+        root,
+        alias: { '#providers': root },
+      },
     )
 
     expect(typeof providers.custom).toBe('function')
@@ -75,7 +89,13 @@ describe('resolveProviders', () => {
 
     const providers = await resolveProviders(
       { custom: '#provider' },
-      { root, alias: { '#unrelated': root, '#provider': join(root, 'provider.mjs') } },
+      {
+        root,
+        alias: {
+          '#unrelated': root,
+          '#provider': join(root, 'provider.mjs'),
+        },
+      },
     )
 
     expect(typeof providers.custom).toBe('function')

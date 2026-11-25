@@ -25,7 +25,9 @@ function createLogger() {
   const warnings: string[] = []
   return {
     warnings,
-    logger: { warn: (message: string) => void warnings.push(message) } as any,
+    logger: {
+      warn: (message: string) => void warnings.push(message),
+    } as any,
   }
 }
 
@@ -35,7 +37,15 @@ function createTrackingProvider(name: string): { provider: () => Provider, calls
   const provider = () => {
     const resolveFont: InitializedProvider['resolveFont'] = async (family, options) => {
       calls.push({ family, options })
-      return { fonts: [{ src: [{ url: '/font.woff2', format: 'woff2' }] }] }
+      return {
+        fonts: [
+          {
+            src: [
+              { url: '/font.woff2', format: 'woff2' },
+            ],
+          },
+        ],
+      }
     }
     return createMockProviderFn(name, resolveFont)
   }
@@ -47,14 +57,22 @@ function defaultNormalizeFontData(faces: RawFontFaceData | FontFaceData[]): Font
     return faces
   }
   const normalized = faces as RawFontFaceData
-  const srcArray = Array.isArray(normalized.src) ? normalized.src : [normalized.src]
-  return [{
-    ...normalized,
-    src: srcArray.map(s => typeof s === 'string' ? { url: s } : s),
-    unicodeRange: normalized.unicodeRange
-      ? (Array.isArray(normalized.unicodeRange) ? normalized.unicodeRange : [normalized.unicodeRange])
-      : undefined,
-  }]
+  const srcArray = Array.isArray(normalized.src)
+    ? normalized.src
+    : [normalized.src]
+  return [
+    {
+      ...normalized,
+      src: srcArray.map(s => typeof s === 'string'
+        ? { url: s }
+        : s),
+      unicodeRange: normalized.unicodeRange
+        ? (Array.isArray(normalized.unicodeRange)
+            ? normalized.unicodeRange
+            : [normalized.unicodeRange])
+        : undefined,
+    },
+  ]
 }
 
 describe('createResolver', () => {
@@ -186,7 +204,9 @@ describe('createResolver', () => {
           google: {
             experimental: {
               variableAxis: {
-                wght: [['100', '900']],
+                wght: [
+                  ['100', '900'],
+                ],
               },
             },
           },
@@ -223,7 +243,9 @@ describe('createResolver', () => {
       const { calls } = await resolveWith('google', {}, { name: 'TestFont', glyphs: 'Hand' })
 
       expect((calls[0]?.options as { options: unknown }).options).toEqual({
-        experimental: { glyphs: ['H', 'a', 'd', 'n'] },
+        experimental: {
+          glyphs: ['H', 'a', 'd', 'n'],
+        },
       })
     })
 
@@ -231,7 +253,9 @@ describe('createResolver', () => {
       const { calls } = await resolveWith('google', {}, { name: 'TestFont', glyphs: 'U+0048-004A' })
 
       expect((calls[0]?.options as { options: unknown }).options).toEqual({
-        experimental: { glyphs: ['H', 'I', 'J'] },
+        experimental: {
+          glyphs: ['H', 'I', 'J'],
+        },
       })
     })
 
@@ -245,7 +269,9 @@ describe('createResolver', () => {
       const { calls } = await resolveWith('google', {}, { name: 'TestFont', glyphs: 'Hand' }, 'myFonts')
 
       expect((calls[0]?.options as { options: unknown }).options).toEqual({
-        experimental: { glyphs: ['H', 'a', 'd', 'n'] },
+        experimental: {
+          glyphs: ['H', 'a', 'd', 'n'],
+        },
       })
     })
 
@@ -259,17 +285,29 @@ describe('createResolver', () => {
       const { calls } = await resolveWith('google', {}, {
         name: 'TestFont',
         glyphs: 'Hand',
-        providerOptions: { google: { experimental: { glyphs: ['A'] } } },
+        providerOptions: {
+          google: {
+            experimental: {
+              glyphs: ['A'],
+            },
+          },
+        },
       })
 
       expect((calls[0]?.options as { options: unknown }).options).toEqual({
-        experimental: { glyphs: ['A'] },
+        experimental: {
+          glyphs: ['A'],
+        },
       })
     })
 
     it('should subset locally, preferring a family\'s glyphs over the default', async () => {
-      const withDefault = await resolveWith('test', { defaults: { glyphs: 'abc' } }, { name: 'TestFont' })
-      const withOverride = await resolveWith('test', { defaults: { glyphs: 'abc' } }, { name: 'TestFont', glyphs: 'Hand' })
+      const withDefault = await resolveWith('test', {
+        defaults: { glyphs: 'abc' },
+      }, { name: 'TestFont' })
+      const withOverride = await resolveWith('test', {
+        defaults: { glyphs: 'abc' },
+      }, { name: 'TestFont', glyphs: 'Hand' })
       const withNothing = await resolveWith('test', {})
 
       expect(withDefault.glyphLists).toEqual(['abc'])
@@ -294,7 +332,9 @@ describe('createResolver', () => {
       const exposed: Array<{ provider?: string }> = []
 
       const resolver = await createResolver({
-        options: { providers: { myFonts: provider } },
+        options: {
+          providers: { myFonts: provider },
+        },
         providers: { myFonts: provider },
         normalizeFontData: defaultNormalizeFontData,
         exposeFont: font => void exposed.push(font as { provider?: string }),
@@ -311,12 +351,19 @@ describe('createResolver', () => {
       const { provider, calls } = createTrackingProvider('custom')
 
       const resolver = await createResolver({
-        options: { providers: { myFonts: provider } },
+        options: {
+          providers: { myFonts: provider },
+        },
         providers: { myFonts: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
 
-      await resolver('Inter', { name: 'Inter', providerOptions: { myFonts: { variant: 'display' } } } as unknown as FontFamilyProviderOverride)
+      await resolver('Inter', {
+        name: 'Inter',
+        providerOptions: {
+          myFonts: { variant: 'display' },
+        },
+      } as unknown as FontFamilyProviderOverride)
 
       expect((calls[0]?.options as { options?: unknown })?.options).toEqual({ variant: 'display' })
     })
@@ -325,12 +372,19 @@ describe('createResolver', () => {
       const { provider, calls } = createTrackingProvider('custom')
 
       const resolver = await createResolver({
-        options: { providers: { myFonts: provider } },
+        options: {
+          providers: { myFonts: provider },
+        },
         providers: { myFonts: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
 
-      await resolver('Inter', { name: 'Inter', providerOptions: { unknown: { variant: 'display' } } } as unknown as FontFamilyProviderOverride)
+      await resolver('Inter', {
+        name: 'Inter',
+        providerOptions: {
+          unknown: { variant: 'display' },
+        },
+      } as unknown as FontFamilyProviderOverride)
 
       expect((calls[0]?.options as { options?: unknown })?.options).toBeUndefined()
     })
@@ -339,7 +393,9 @@ describe('createResolver', () => {
       const { provider, calls } = createTrackingProvider('custom')
 
       const resolver = await createResolver({
-        options: { providers: { myFonts: provider } },
+        options: {
+          providers: { myFonts: provider },
+        },
         providers: { myFonts: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -352,13 +408,21 @@ describe('createResolver', () => {
   })
 
   describe('system fonts', () => {
-    const preflightFamilies = ['SFMono-Regular', 'Apple Color Emoji', '-apple-system', 'Georgia', 'segoe ui emoji']
+    const preflightFamilies = [
+      'SFMono-Regular',
+      'Apple Color Emoji',
+      '-apple-system',
+      'Georgia',
+      'segoe ui emoji',
+    ]
 
     it('should not send families that ship with the operating system to providers', async () => {
       const { provider, calls } = createTrackingProvider('test')
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -373,7 +437,9 @@ describe('createResolver', () => {
       const { provider, calls } = createTrackingProvider('test')
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -388,7 +454,9 @@ describe('createResolver', () => {
       const { provider, calls } = createTrackingProvider('test')
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -424,7 +492,13 @@ describe('createResolver', () => {
   describe('fallback categories', () => {
     function createCategoryProvider(fallbacks?: string[]) {
       return () => createMockProviderFn('test', async () => ({
-        fonts: [{ src: [{ url: '/font.woff2', format: 'woff2' }] }],
+        fonts: [
+          {
+            src: [
+              { url: '/font.woff2', format: 'woff2' },
+            ],
+          },
+        ],
         fallbacks,
       }))
     }
@@ -432,7 +506,9 @@ describe('createResolver', () => {
     it('should use the category the provider reports for the family', async () => {
       const provider = createCategoryProvider(['monospace'])
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -444,7 +520,9 @@ describe('createResolver', () => {
     it('should prefer the generic family declared in CSS over the provider category', async () => {
       const provider = createCategoryProvider(['monospace'])
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -456,55 +534,84 @@ describe('createResolver', () => {
     it('should prefer concrete fallbacks declared in CSS over the generic family', async () => {
       const provider = createCategoryProvider(['monospace'])
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
 
-      const result = await resolver('Test Font', undefined, { fallbacks: ['Georgia'], generic: 'serif' })
+      const result = await resolver('Test Font', undefined, {
+        fallbacks: ['Georgia'],
+        generic: 'serif',
+      })
       expect(result?.fallbacks?.[0]).toBe('Georgia')
     })
 
     it('should keep the category defaults after concrete fallbacks declared in CSS', async () => {
       const provider = createCategoryProvider(['monospace'])
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
 
-      const result = await resolver('Test Font', undefined, { fallbacks: ['Roboto'], generic: 'sans-serif' })
+      const result = await resolver('Test Font', undefined, {
+        fallbacks: ['Roboto'],
+        generic: 'sans-serif',
+      })
       expect(result?.fallbacks).toEqual(['Roboto', ...defaultValues.fallbacks['sans-serif']!])
     })
 
     it('should not duplicate concrete fallbacks that are also category defaults', async () => {
       const provider = createCategoryProvider(['monospace'])
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
 
-      const result = await resolver('Test Font', undefined, { fallbacks: ['Arial'], generic: 'sans-serif' })
-      expect(result?.fallbacks).toEqual(['Arial', ...defaultValues.fallbacks['sans-serif']!.filter(f => f !== 'Arial')])
+      const result = await resolver('Test Font', undefined, {
+        fallbacks: ['Arial'],
+        generic: 'sans-serif',
+      })
+      expect(result?.fallbacks).toEqual([
+        'Arial',
+        ...defaultValues.fallbacks['sans-serif']!.filter(f => f !== 'Arial'),
+      ])
     })
 
     it('should prefer explicit family fallbacks over concrete fallbacks declared in CSS', async () => {
       const provider = createCategoryProvider(['monospace'])
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
 
-      const result = await resolver('Test Font', { name: 'Test Font', provider: 'test', fallbacks: ['Arial'] }, { fallbacks: ['Georgia'], generic: 'serif' })
+      const result = await resolver('Test Font', {
+        name: 'Test Font',
+        provider: 'test',
+        fallbacks: ['Arial'],
+      }, {
+        fallbacks: ['Georgia'],
+        generic: 'serif',
+      })
       expect(result?.fallbacks).toEqual(['Arial'])
     })
 
     it('should fall back to sans-serif when the provider reports no known category', async () => {
       const provider = createCategoryProvider(['Some Other Font'])
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -516,23 +623,34 @@ describe('createResolver', () => {
     it('should prefer explicit family fallbacks over the provider category', async () => {
       const provider = createCategoryProvider(['monospace'])
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
 
-      const result = await resolver('Test Font', { name: 'Test Font', provider: 'test', fallbacks: ['Arial'] })
+      const result = await resolver('Test Font', {
+        name: 'Test Font',
+        provider: 'test',
+        fallbacks: ['Arial'],
+      })
       expect(result?.fallbacks).toEqual(['Arial'])
     })
   })
 
   describe('fallback instances', () => {
-    const fallbackInstances = [{ weight: 800 }, { weight: 700, stretch: '125%' as const }]
+    const fallbackInstances = [
+      { weight: 800 },
+      { weight: 700, stretch: '125%' as const },
+    ]
 
     it('should resolve the fallback instances of a family', async () => {
       const { provider } = createTrackingProvider('test')
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -545,7 +663,10 @@ describe('createResolver', () => {
     it('should resolve the default fallback instances unless a family sets its own', async () => {
       const { provider } = createTrackingProvider('test')
       const resolver = await createResolver({
-        options: { providers: { test: provider }, defaults: { fallbackInstances } },
+        options: {
+          providers: { test: provider },
+          defaults: { fallbackInstances },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -559,12 +680,19 @@ describe('createResolver', () => {
     it('should not treat the fallback instances of a manual family as a descriptor', async () => {
       const { provider } = createTrackingProvider('test')
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
 
-      const result = await resolver('Test Font', { name: 'Test Font', src: '/font.woff2', weight: [100, 900], fallbackInstances })
+      const result = await resolver('Test Font', {
+        name: 'Test Font',
+        src: '/font.woff2',
+        weight: [100, 900],
+        fallbackInstances,
+      })
       expect(result?.fallbackInstances).toEqual(fallbackInstances)
       expect(result?.fonts?.[0]).not.toHaveProperty('fallbackInstances')
     })
@@ -582,11 +710,16 @@ describe('createResolver', () => {
       let providerFetch: ProviderContext['fetch']
       const provider = () => Object.assign((ctx: ProviderContext) => {
         providerFetch = ctx.fetch
-        return Promise.resolve({ resolveFont: async () => undefined })
+        return Promise.resolve({
+          resolveFont: async () => undefined,
+        })
       }, { _name: 'test', _options: {} }) as Provider
 
       const resolver = await createResolver({
-        options: { providers: { test: provider }, apiBase: 'https://proxy.example.com' },
+        options: {
+          providers: { test: provider },
+          apiBase: 'https://proxy.example.com',
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -628,7 +761,12 @@ describe('createResolver', () => {
   describe('multiple entries for one family', () => {
     const families: FontlessOptions['families'] = [
       { name: 'My Font', src: '/regular.woff2', weight: 400 },
-      { name: 'My Font', src: '/black.woff2', weight: 900, fallbacks: ['Arial'] },
+      {
+        name: 'My Font',
+        src: '/black.woff2',
+        weight: 900,
+        fallbacks: ['Arial'],
+      },
     ]
 
     it('should resolve every `src` entry configured for a family', async () => {
@@ -636,7 +774,10 @@ describe('createResolver', () => {
       const exposed: Array<{ fonts: FontFaceData[] }> = []
 
       const resolver = await createResolver({
-        options: { providers: { test: provider }, families },
+        options: {
+          providers: { test: provider },
+          families,
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
         exposeFont: font => void exposed.push(font),
@@ -645,9 +786,18 @@ describe('createResolver', () => {
       const result = await resolver('My Font')
 
       expect(calls).toHaveLength(0)
-      expect(result?.fonts?.map(font => [font.weight, font.src.at(-1)])).toEqual([
-        [400, { url: '/regular.woff2' }],
-        [900, { url: '/black.woff2' }],
+      expect(result?.fonts?.map(font => [
+        font.weight,
+        font.src.at(-1),
+      ])).toEqual([
+        [
+          400,
+          { url: '/regular.woff2' },
+        ],
+        [
+          900,
+          { url: '/black.woff2' },
+        ],
       ])
       expect(result?.fallbacks).toEqual(['Arial'])
       expect(exposed).toHaveLength(1)
@@ -658,7 +808,9 @@ describe('createResolver', () => {
       const { provider } = createTrackingProvider('test')
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -672,7 +824,13 @@ describe('createResolver', () => {
       const { logger, warnings } = createLogger()
 
       const resolver = await createResolver({
-        options: { providers: { test: provider }, families: [...families!, { name: 'My Font', provider: 'test' }] },
+        options: {
+          providers: { test: provider },
+          families: [
+            ...families!,
+            { name: 'My Font', provider: 'test' },
+          ],
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
         logger,
@@ -828,7 +986,9 @@ describe('createResolver', () => {
       const { provider: npm, calls: npmCalls } = createTrackingProvider('npm')
 
       const resolver = await createResolver({
-        options: { providers: { google, npm: false } },
+        options: {
+          providers: { google, npm: false },
+        },
         providers: { google, npm },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -844,7 +1004,10 @@ describe('createResolver', () => {
       const { provider: npm, calls: npmCalls } = createTrackingProvider('npm')
 
       const resolver = await createResolver({
-        options: { provider: 'npm', providers: { google, npm } },
+        options: {
+          provider: 'npm',
+          providers: { google, npm },
+        },
         providers: { google, npm },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -859,7 +1022,9 @@ describe('createResolver', () => {
       const { provider: google } = createTrackingProvider('google')
 
       await expect(createResolver({
-        options: { providers: { google: false } },
+        options: {
+          providers: { google: false },
+        },
         providers: { google },
         normalizeFontData: defaultNormalizeFontData,
       })).rejects.toThrow('At least one font provider must be configured')
@@ -869,7 +1034,10 @@ describe('createResolver', () => {
       const { provider: google, calls: googleCalls } = createTrackingProvider('google')
 
       const resolver = await createResolver({
-        options: { priority: ['google', 'nonexistent'], providers: { google } },
+        options: {
+          priority: ['google', 'nonexistent'],
+          providers: { google },
+        },
         providers: { google },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -885,7 +1053,12 @@ describe('createResolver', () => {
       const { provider } = createTrackingProvider('test')
 
       const resolver = await createResolver({
-        options: { providers: { test: provider }, defaults: { fallbacks: ['Arial'] } },
+        options: {
+          providers: { test: provider },
+          defaults: {
+            fallbacks: ['Arial'],
+          },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -899,7 +1072,10 @@ describe('createResolver', () => {
       const { provider } = createTrackingProvider('test')
 
       const resolver = await createResolver({
-        options: { providers: { test: provider }, experimental: { disableLocalFallbacks: true } },
+        options: {
+          providers: { test: provider },
+          experimental: { disableLocalFallbacks: true },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -915,7 +1091,9 @@ describe('createResolver', () => {
       const { provider, calls } = createTrackingProvider('test')
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -939,7 +1117,9 @@ describe('createResolver', () => {
       const { logger, warnings } = createLogger()
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
         logger,
@@ -956,7 +1136,9 @@ describe('createResolver', () => {
       const { logger, warnings } = createLogger()
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
         logger,
@@ -973,13 +1155,18 @@ describe('createResolver', () => {
       const { logger, warnings } = createLogger()
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
         logger,
       })
 
-      const result = await resolver('Inter', { name: 'Inter', weights: [400] })
+      const result = await resolver('Inter', {
+        name: 'Inter',
+        weights: [400],
+      })
 
       expect(result).toBeUndefined()
       expect(warnings[0]).toContain('Could not produce font face declaration for `Inter` with override')
@@ -990,7 +1177,10 @@ describe('createResolver', () => {
       const { logger, warnings } = createLogger()
 
       const resolver = await createResolver({
-        options: { providers: { test: provider }, throwOnError: true },
+        options: {
+          providers: { test: provider },
+          throwOnError: true,
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
         logger,
@@ -1005,13 +1195,19 @@ describe('createResolver', () => {
       const { logger, warnings } = createLogger()
 
       const resolver = await createResolver({
-        options: { providers: { test: provider }, throwOnError: true },
+        options: {
+          providers: { test: provider },
+          throwOnError: true,
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
         logger,
       })
 
-      expect(await resolver('Inter', { name: 'Inter', weights: [400] })).toBeUndefined()
+      expect(await resolver('Inter', {
+        name: 'Inter',
+        weights: [400],
+      })).toBeUndefined()
       expect(warnings[0]).toContain('Could not produce font face declaration for `Inter` with override')
     })
 
@@ -1020,7 +1216,10 @@ describe('createResolver', () => {
       const { logger, warnings } = createLogger()
 
       const resolver = await createResolver({
-        options: { providers: { test: provider }, throwOnError: true },
+        options: {
+          providers: { test: provider },
+          throwOnError: true,
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
         logger,
@@ -1035,7 +1234,9 @@ describe('createResolver', () => {
       const { logger, warnings } = createLogger()
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
         logger,
@@ -1048,10 +1249,22 @@ describe('createResolver', () => {
 
   describe('font face descriptors', () => {
     it('should apply display and unicodeRange to faces from an explicit provider', async () => {
-      const provider = createEmptyProvider('test', { fonts: [{ display: 'swap', unicodeRange: ['U+0000-007F'], src: [{ url: '/font.woff2' }] }] })
+      const provider = createEmptyProvider('test', {
+        fonts: [
+          {
+            display: 'swap',
+            unicodeRange: ['U+0000-007F'],
+            src: [
+              { url: '/font.woff2' },
+            ],
+          },
+        ],
+      })
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -1070,10 +1283,22 @@ describe('createResolver', () => {
     })
 
     it('should apply display and unicodeRange to auto-resolved faces', async () => {
-      const provider = createEmptyProvider('test', { fonts: [{ display: 'swap', unicodeRange: ['U+0000-007F'], src: [{ url: '/font.woff2' }] }] })
+      const provider = createEmptyProvider('test', {
+        fonts: [
+          {
+            display: 'swap',
+            unicodeRange: ['U+0000-007F'],
+            src: [
+              { url: '/font.woff2' },
+            ],
+          },
+        ],
+      })
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -1091,25 +1316,51 @@ describe('createResolver', () => {
     })
 
     it('should leave resolved faces untouched when no descriptors are set', async () => {
-      const provider = createEmptyProvider('test', { fonts: [{ display: 'block', src: [{ url: '/font.woff2' }] }] })
+      const provider = createEmptyProvider('test', {
+        fonts: [
+          {
+            display: 'block',
+            src: [
+              { url: '/font.woff2' },
+            ],
+          },
+        ],
+      })
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
 
-      const result = await resolver('Inter', { name: 'Inter', weights: [400] })
+      const result = await resolver('Inter', {
+        name: 'Inter',
+        weights: [400],
+      })
 
       expect(result?.fonts?.[0]).toMatchObject({ display: 'block' })
       expect(result?.fonts?.[0]).not.toHaveProperty('unicodeRange', expect.anything())
     })
 
     it('should apply display without touching a provider unicodeRange', async () => {
-      const provider = createEmptyProvider('test', { fonts: [{ display: 'swap', unicodeRange: ['U+0000-007F'], src: [{ url: '/font.woff2' }] }] })
+      const provider = createEmptyProvider('test', {
+        fonts: [
+          {
+            display: 'swap',
+            unicodeRange: ['U+0000-007F'],
+            src: [
+              { url: '/font.woff2' },
+            ],
+          },
+        ],
+      })
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -1123,10 +1374,22 @@ describe('createResolver', () => {
     })
 
     it('should apply unicodeRange without touching a provider display', async () => {
-      const provider = createEmptyProvider('test', { fonts: [{ display: 'swap', unicodeRange: ['U+0000-007F'], src: [{ url: '/font.woff2' }] }] })
+      const provider = createEmptyProvider('test', {
+        fonts: [
+          {
+            display: 'swap',
+            unicodeRange: ['U+0000-007F'],
+            src: [
+              { url: '/font.woff2' },
+            ],
+          },
+        ],
+      })
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -1140,10 +1403,20 @@ describe('createResolver', () => {
     })
 
     it('should apply metric overrides to resolved faces', async () => {
-      const provider = createEmptyProvider('test', { fonts: [{ src: [{ url: '/font.woff2' }] }] })
+      const provider = createEmptyProvider('test', {
+        fonts: [
+          {
+            src: [
+              { url: '/font.woff2' },
+            ],
+          },
+        ],
+      })
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -1155,17 +1428,31 @@ describe('createResolver', () => {
         sizeAdjust: '105%',
       }
 
-      for (const override of [{ name: 'Inter', provider: 'test', ...overrides }, { name: 'Inter', ...overrides }]) {
+      for (const override of [
+        { name: 'Inter', provider: 'test', ...overrides },
+        { name: 'Inter', ...overrides },
+      ]) {
         const result = await resolver('Inter', override)
         expect(result?.fonts?.[0]).toMatchObject(overrides)
       }
     })
 
     it('should override metric descriptors returned by a provider', async () => {
-      const provider = createEmptyProvider('test', { fonts: [{ src: [{ url: '/font.woff2' }], sizeAdjust: '50%' } as never] })
+      const provider = createEmptyProvider('test', {
+        fonts: [
+          {
+            src: [
+              { url: '/font.woff2' },
+            ],
+            sizeAdjust: '50%',
+          } as never,
+        ],
+      })
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -1176,10 +1463,21 @@ describe('createResolver', () => {
     })
 
     it('should leave provider metric descriptors in place when none are set', async () => {
-      const provider = createEmptyProvider('test', { fonts: [{ src: [{ url: '/font.woff2' }], sizeAdjust: '50%' } as never] })
+      const provider = createEmptyProvider('test', {
+        fonts: [
+          {
+            src: [
+              { url: '/font.woff2' },
+            ],
+            sizeAdjust: '50%',
+          } as never,
+        ],
+      })
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -1193,7 +1491,9 @@ describe('createResolver', () => {
       const { provider } = createTrackingProvider('test')
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -1219,7 +1519,9 @@ describe('createResolver', () => {
       const { provider } = createTrackingProvider('test')
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
       })
@@ -1258,11 +1560,22 @@ describe('createResolver', () => {
 
   describe('exposeFont', () => {
     it('should report `unknown` when the resolving provider is not named', async () => {
-      const provider = createEmptyProvider('test', { fonts: [{ src: [{ url: '/font.woff2' }] }], provider: undefined })
+      const provider = createEmptyProvider('test', {
+        fonts: [
+          {
+            src: [
+              { url: '/font.woff2' },
+            ],
+          },
+        ],
+        provider: undefined,
+      })
       const exposed: Array<{ provider?: string }> = []
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
         exposeFont: font => void exposed.push(font as { provider?: string }),
@@ -1274,11 +1587,22 @@ describe('createResolver', () => {
     })
 
     it('should await an async `exposeFont` callback', async () => {
-      const provider = createEmptyProvider('test', { fonts: [{ src: [{ url: '/font.woff2' }] }], provider: 'test' })
+      const provider = createEmptyProvider('test', {
+        fonts: [
+          {
+            src: [
+              { url: '/font.woff2' },
+            ],
+          },
+        ],
+        provider: 'test',
+      })
       const exposed: string[] = []
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
         exposeFont: async (font) => {
@@ -1293,14 +1617,29 @@ describe('createResolver', () => {
     })
 
     it('should expose the glyphs and variable axes requested for a family', async () => {
-      const provider = createEmptyProvider('test', { fonts: [{ src: [{ url: '/font.woff2' }] }], provider: 'test' })
+      const provider = createEmptyProvider('test', {
+        fonts: [
+          {
+            src: [
+              { url: '/font.woff2' },
+            ],
+          },
+        ],
+        provider: 'test',
+      })
       const exposed: Array<ManualFontDetails | ProviderFontDetails> = []
 
       const resolver = await createResolver({
         options: {
           providers: { test: provider },
           families: [
-            { name: 'Inter', glyphs: 'ab', variableAxis: { CASL: [1] } },
+            {
+              name: 'Inter',
+              glyphs: 'ab',
+              variableAxis: {
+                CASL: [1],
+              },
+            },
             { name: 'Manual', src: '/manual.woff2', glyphs: 'cd' },
           ],
         },
@@ -1314,17 +1653,34 @@ describe('createResolver', () => {
       await resolver('Plain')
 
       expect(exposed.map(({ fontFamily, glyphs, variableAxis }) => ({ fontFamily, glyphs, variableAxis }))).toEqual([
-        { fontFamily: 'Inter', glyphs: 'ab', variableAxis: { CASL: [1] } },
+        {
+          fontFamily: 'Inter',
+          glyphs: 'ab',
+          variableAxis: {
+            CASL: [1],
+          },
+        },
         { fontFamily: 'Manual', glyphs: 'cd', variableAxis: undefined },
         { fontFamily: 'Plain', glyphs: undefined, variableAxis: undefined },
       ])
     })
 
     it('should propagate a rejection from `exposeFont`', async () => {
-      const provider = createEmptyProvider('test', { fonts: [{ src: [{ url: '/font.woff2' }] }], provider: 'test' })
+      const provider = createEmptyProvider('test', {
+        fonts: [
+          {
+            src: [
+              { url: '/font.woff2' },
+            ],
+          },
+        ],
+        provider: 'test',
+      })
 
       const resolver = await createResolver({
-        options: { providers: { test: provider } },
+        options: {
+          providers: { test: provider },
+        },
         providers: { test: provider },
         normalizeFontData: defaultNormalizeFontData,
         exposeFont: async () => {
@@ -1338,39 +1694,74 @@ describe('createResolver', () => {
 
   describe('file sources', () => {
     const fonts: FontFaceData[] = [
-      { src: [{ url: 'file:///home/user/.ssh/id_rsa' }, { url: 'https://example.com/font.woff2' }], weight: 400 },
-      { src: [{ url: 'FILE:///etc/passwd' }], weight: 700 },
+      {
+        src: [
+          { url: 'file:///home/user/.ssh/id_rsa' },
+          { url: 'https://example.com/font.woff2' },
+        ],
+        weight: 400,
+      },
+      {
+        src: [
+          { url: 'FILE:///etc/passwd' },
+        ],
+        weight: 700,
+      },
     ]
 
     async function resolveWith(name: string, options: Partial<FontlessOptions> = {}, override?: FontFamilyProviderOverride) {
-      const provider = createEmptyProvider(name, { fonts: structuredClone(fonts), provider: name })
+      const provider = createEmptyProvider(name, {
+        fonts: structuredClone(fonts),
+        provider: name,
+      })
       const { logger, warnings } = createLogger()
       const resolver = await createResolver({
-        options: { providers: { [name]: provider }, experimental: { disableLocalFallbacks: true }, ...options },
+        options: {
+          providers: { [name]: provider },
+          experimental: { disableLocalFallbacks: true },
+          ...options,
+        },
         providers: { [name]: provider },
         normalizeFontData: defaultNormalizeFontData,
         logger,
       })
       const result = await resolver('Inter', override)
-      return { sources: result?.fonts?.map(face => face.src), warnings }
+      return {
+        sources: result?.fonts?.map(face => face.src),
+        warnings,
+      }
     }
 
     it('should drop `file:` sources resolved by remote providers', async () => {
       const { sources, warnings } = await resolveWith('google')
 
-      expect(sources).toEqual([[{ url: 'https://example.com/font.woff2' }]])
+      expect(sources).toEqual([
+        [
+          { url: 'https://example.com/font.woff2' },
+        ],
+      ])
       expect(warnings).toHaveLength(2)
     })
 
     it('should drop `file:` sources from a remote provider chosen in an override', async () => {
       const { sources } = await resolveWith('google', {}, { name: 'Inter', provider: 'google' })
 
-      expect(sources).toEqual([[{ url: 'https://example.com/font.woff2' }]])
+      expect(sources).toEqual([
+        [
+          { url: 'https://example.com/font.woff2' },
+        ],
+      ])
     })
 
     it('should drop `file:` sources from the npm provider unless it resolves locally', async () => {
-      expect((await resolveWith('npm')).sources).toEqual([[{ url: 'https://example.com/font.woff2' }]])
-      expect((await resolveWith('npm', { npm: { remote: false } })).sources).toEqual(fonts.map(face => face.src))
+      expect((await resolveWith('npm')).sources).toEqual([
+        [
+          { url: 'https://example.com/font.woff2' },
+        ],
+      ])
+      expect((await resolveWith('npm', {
+        npm: { remote: false },
+      })).sources).toEqual(fonts.map(face => face.src))
     })
 
     it('should keep `file:` sources from custom providers', async () => {

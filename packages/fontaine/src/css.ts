@@ -44,7 +44,13 @@ export function isStylesheetRelative(source: string): boolean {
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_cascade/Value_processing#css-wide_keywords
-export const cssWideKeywords: Set<string> = new Set(['inherit', 'initial', 'revert', 'revert-layer', 'unset'])
+export const cssWideKeywords: Set<string> = new Set([
+  'inherit',
+  'initial',
+  'revert',
+  'revert-layer',
+  'unset',
+])
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/font-family
 export const genericCSSFamilies: Set<string> = new Set([
@@ -66,11 +72,41 @@ export const genericCSSFamilies: Set<string> = new Set([
 // A generic is resolved by the user agent and is never an installed family, so `local()` needs
 // the concrete families each generic resolves to across common platforms.
 const genericFamilyLocals: Record<string, string[]> = {
-  'serif': ['Times New Roman', 'Tinos', 'Liberation Serif', 'DejaVu Serif', 'Times'],
-  'sans-serif': ['Arial', 'Arimo', 'Liberation Sans', 'DejaVu Sans', 'Helvetica'],
-  'monospace': ['Courier New', 'Cousine', 'Liberation Mono', 'DejaVu Sans Mono', 'Menlo'],
-  'system-ui': ['Segoe UI', 'Roboto', 'Helvetica Neue', 'Cantarell', 'Ubuntu', 'Noto Sans'],
-  'cursive': ['Comic Sans MS', 'Apple Chancery', 'Segoe Script', 'URW Chancery L'],
+  'serif': [
+    'Times New Roman',
+    'Tinos',
+    'Liberation Serif',
+    'DejaVu Serif',
+    'Times',
+  ],
+  'sans-serif': [
+    'Arial',
+    'Arimo',
+    'Liberation Sans',
+    'DejaVu Sans',
+    'Helvetica',
+  ],
+  'monospace': [
+    'Courier New',
+    'Cousine',
+    'Liberation Mono',
+    'DejaVu Sans Mono',
+    'Menlo',
+  ],
+  'system-ui': [
+    'Segoe UI',
+    'Roboto',
+    'Helvetica Neue',
+    'Cantarell',
+    'Ubuntu',
+    'Noto Sans',
+  ],
+  'cursive': [
+    'Comic Sans MS',
+    'Apple Chancery',
+    'Segoe Script',
+    'URW Chancery L',
+  ],
   'fantasy': ['Impact', 'Papyrus', 'Luminari'],
 }
 genericFamilyLocals['ui-serif'] = genericFamilyLocals.serif!
@@ -100,8 +136,12 @@ export function extractFontFamily(value: Value, skip: (name: string) => boolean)
   const names: string[] = []
   let end = 0
   for (const child of value.children) {
-    if (child.type === 'String')
-      return { family: withoutQuotes(child.value), end: child.loc!.end.offset }
+    if (child.type === 'String') {
+      return {
+        family: withoutQuotes(child.value),
+        end: child.loc!.end.offset,
+      }
+    }
     if (child.type === 'Identifier' && !skip(child.name)) {
       names.push(child.name)
       end = child.loc!.end.offset
@@ -110,7 +150,12 @@ export function extractFontFamily(value: Value, skip: (name: string) => boolean)
       break
     }
   }
-  return names.length ? { family: names.join(' '), end } : undefined
+  return names.length
+    ? {
+        family: names.join(' '),
+        end,
+      }
+    : undefined
 }
 
 /**
@@ -121,7 +166,9 @@ export function extractFontFamily(value: Value, skip: (name: string) => boolean)
  */
 export function parseFontFace(css: string | CssNode): Array<{ index: number, family: string, source?: string, properties: FontProperties }> {
   const families: Array<{ index: number, family: string, source?: string, properties: FontProperties }> = []
-  const ast = typeof css === 'string' ? parse(css, { positions: true }) : css
+  const ast = typeof css === 'string'
+    ? parse(css, { positions: true })
+    : css
 
   walk(ast, {
     visit: 'Atrule',
@@ -170,7 +217,12 @@ export function parseFontFace(css: string | CssNode): Array<{ index: number, fam
 
       if (family) {
         for (const source of sources) {
-          families.push({ index: node.loc!.start.offset, family, source, properties })
+          families.push({
+            index: node.loc!.start.offset,
+            family,
+            source,
+            properties,
+          })
         }
         if (!sources.length) {
           families.push({ index: node.loc!.start.offset, family, properties })
@@ -277,7 +329,9 @@ function renderLocalSrc(font: string, metrics: Pick<FontFaceMetrics, 'fullName' 
   const family = withoutQuotes(font)
   const families = genericFamilyLocals[family.toLowerCase()] || [family]
   const names = new Set(families.flatMap(family => [
-    ...style === 'Regular' ? [family] : [],
+    ...style === 'Regular'
+      ? [family]
+      : [],
     `${family} ${style}`,
     `${family.replace(/\s+/g, '')}-${style}`,
   ]))

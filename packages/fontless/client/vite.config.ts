@@ -72,9 +72,16 @@ function microlighterGrammars(): Plugin {
 }
 
 export default defineConfig(({ command }) => ({
-  base: command === 'serve' ? base : './',
+  base: command === 'serve'
+    ? base
+    : './',
   root: fileURLToPath(new URL('.', import.meta.url)),
-  plugins: [vue(), UnoCSS(fileURLToPath(new URL('./uno.config.ts', import.meta.url))), microlighterGrammars(), devBridge()],
+  plugins: [
+    vue(),
+    UnoCSS(fileURLToPath(new URL('./uno.config.ts', import.meta.url))),
+    microlighterGrammars(),
+    devBridge(),
+  ],
   optimizeDeps: {
     exclude: ['microlighter'],
   },

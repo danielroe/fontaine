@@ -4,13 +4,19 @@ import { describe, expect, it, vi } from 'vitest'
 import { createResolver } from '../src/resolve'
 import { transformCSS } from '../src/utils'
 
-const font = { src: [{ url: '/inter.woff2', format: 'woff2' }] }
+const font = {
+  src: [
+    { url: '/inter.woff2', format: 'woff2' },
+  ],
+}
 
 function transform(code: string, options: Partial<FontFamilyInjectionPluginOptions> = {}, opts?: { relative?: boolean }) {
   return transformCSS({
     dev: true,
     fontsToPreload: new Map<string, Set<string>>(),
-    resolveFontFace: () => ({ fonts: [font] }),
+    resolveFontFace: () => ({
+      fonts: [font],
+    }),
     ...options,
   }, code, '/css/style.css', opts).then(result => result.toString())
 }
@@ -27,8 +33,12 @@ describe('transformCSS', () => {
   it('should not inject anything when the family resolves to no fonts', async () => {
     const code = `:root { font-family: 'Inter' }`
 
-    expect(await transform(code, { resolveFontFace: () => ({ fonts: [] }) })).toBe(code)
-    expect(await transform(code, { resolveFontFace: () => undefined })).toBe(code)
+    expect(await transform(code, {
+      resolveFontFace: () => ({ fonts: [] }),
+    })).toBe(code)
+    expect(await transform(code, {
+      resolveFontFace: () => undefined,
+    })).toBe(code)
   })
 
   it('should rewrite font URLs relative to the stylesheet when asked', async () => {
@@ -41,7 +51,15 @@ describe('transformCSS', () => {
     const fontsToPreload = new Map<string, Set<string>>()
     await transform(`:root { font-family: 'Inter' }`, {
       fontsToPreload,
-      resolveFontFace: () => ({ fonts: [{ src: [{ name: 'Inter Var' }] }] }),
+      resolveFontFace: () => ({
+        fonts: [
+          {
+            src: [
+              { name: 'Inter Var' },
+            ],
+          },
+        ],
+      }),
       selectFontsToPreload: (_family, fonts) => fonts,
     })
 
@@ -51,7 +69,13 @@ describe('transformCSS', () => {
   it('should emit fallbacks without the primary `@font-face` when `fallbacksOnly` is set', async () => {
     const result = await transform(`:root { font-family: 'Poppins' }`, {
       resolveFontFace: () => ({
-        fonts: [{ src: [{ url: '/poppins.woff2', format: 'woff2' }] }],
+        fonts: [
+          {
+            src: [
+              { url: '/poppins.woff2', format: 'woff2' },
+            ],
+          },
+        ],
         fallbacks: ['Arial'],
         fallbacksOnly: true,
       }),
@@ -67,7 +91,10 @@ describe('transformCSS', () => {
 
     expect(await transform(code, {
       globalFamilies: new Set(['Poppins']),
-      resolveFontFace: () => ({ fonts: [font], fallbacks: ['Arial'] }),
+      resolveFontFace: () => ({
+        fonts: [font],
+        fallbacks: ['Arial'],
+      }),
     })).toBe(code)
   })
 
@@ -82,7 +109,13 @@ describe('transformCSS', () => {
       fontsToPreload,
       selectFontsToPreload: (_family, fonts) => fonts,
       resolveFontFace: () => ({
-        fonts: [{ src: [{ url: '/geist-mono.woff2', format: 'woff2' }] }],
+        fonts: [
+          {
+            src: [
+              { url: '/geist-mono.woff2', format: 'woff2' },
+            ],
+          },
+        ],
         fallbacks: ['Courier New'],
       }),
     })
@@ -96,7 +129,10 @@ describe('transformCSS', () => {
   it('should not add fallbacks again to a usage site it has already rewritten', async () => {
     const options: Partial<FontFamilyInjectionPluginOptions> = {
       globalFamilies: new Set(['Poppins']),
-      resolveFontFace: () => ({ fonts: [font], fallbacks: ['Arial'] }),
+      resolveFontFace: () => ({
+        fonts: [font],
+        fallbacks: ['Arial'],
+      }),
     }
     const once = await transform(`@font-face { font-family: 'Poppins'; src: local("Poppins") }\n:root { font-family: 'Poppins' }`, options)
 
@@ -110,7 +146,10 @@ describe('transformCSS', () => {
     const options: Partial<FontFamilyInjectionPluginOptions> = {
       processCSSVariables: true,
       globalFamilies: new Set(['Poppins']),
-      resolveFontFace: () => ({ fonts: [font], fallbacks: ['Arial'] }),
+      resolveFontFace: () => ({
+        fonts: [font],
+        fallbacks: ['Arial'],
+      }),
     }
     const once = await transform(`@layer base;\n:root { font-family: 'Poppins' }`, options)
 
@@ -121,7 +160,13 @@ describe('transformCSS', () => {
   it('should emit the primary `@font-face` alongside fallbacks by default', async () => {
     const result = await transform(`:root { font-family: 'Poppins' }`, {
       resolveFontFace: () => ({
-        fonts: [{ src: [{ url: '/poppins.woff2', format: 'woff2' }] }],
+        fonts: [
+          {
+            src: [
+              { url: '/poppins.woff2', format: 'woff2' },
+            ],
+          },
+        ],
         fallbacks: ['Arial'],
       }),
     })
@@ -137,7 +182,13 @@ describe('transformCSS', () => {
       fontsToPreload,
       selectFontsToPreload: (_family, fonts) => fonts,
       resolveFontFace: () => ({
-        fonts: [{ src: [{ url: '/poppins.woff2', format: 'woff2' }] }],
+        fonts: [
+          {
+            src: [
+              { url: '/poppins.woff2', format: 'woff2' },
+            ],
+          },
+        ],
         fallbacks: ['Arial'],
         fallbacksOnly: true,
       }),
@@ -149,7 +200,13 @@ describe('transformCSS', () => {
   it('should leave usage sites untouched when `fallbacksOnly` is set and no fallbacks resolve', async () => {
     const result = await transform(`:root { font-family: 'Poppins' }`, {
       resolveFontFace: () => ({
-        fonts: [{ src: [{ url: '/poppins.woff2', format: 'woff2' }] }],
+        fonts: [
+          {
+            src: [
+              { url: '/poppins.woff2', format: 'woff2' },
+            ],
+          },
+        ],
         fallbacks: [],
         fallbacksOnly: true,
       }),
@@ -168,8 +225,21 @@ describe('transformCSS', () => {
   it('should keep the unminified declaration when minification produces no output', async () => {
     const result = await transform(`:root { font-family: 'Inter' }`, {
       dev: false,
-      lightningcssOptions: { include: 0, exclude: 0, targets: { chrome: 1 << 16 } } as any,
-      resolveFontFace: () => ({ fonts: [{ src: [{ url: '/inter.woff2', format: 'woff2' }], unicodeRange: ['U+0000-00FF'] }] }),
+      lightningcssOptions: {
+        include: 0,
+        exclude: 0,
+        targets: { chrome: 1 << 16 },
+      } as any,
+      resolveFontFace: () => ({
+        fonts: [
+          {
+            src: [
+              { url: '/inter.woff2', format: 'woff2' },
+            ],
+            unicodeRange: ['U+0000-00FF'],
+          },
+        ],
+      }),
     })
 
     expect(result).toContain('@font-face')
@@ -178,7 +248,9 @@ describe('transformCSS', () => {
   it('should fall back to unminified CSS when minification throws', async () => {
     const result = await transform(`:root { font-family: 'Inter' }`, {
       dev: false,
-      lightningcssOptions: { targets: { chrome: 'not-a-version' } } as any,
+      lightningcssOptions: {
+        targets: { chrome: 'not-a-version' },
+      } as any,
     })
 
     expect(result).toContain('font-family: \'Inter\';')
@@ -189,7 +261,16 @@ describe('transformCSS', () => {
     await transform(`h1 { font-family: 'Poppins', sans-serif } p { font-family: 'Unknown' }`, {
       exposeUsage: (id, usages) => void exposed.push([id, usages]),
       resolveFontFace: family => family === 'Poppins'
-        ? { fonts: [{ src: [{ url: '/poppins.woff2', format: 'woff2' }] }], fallbacks: ['Arial'] }
+        ? {
+            fonts: [
+              {
+                src: [
+                  { url: '/poppins.woff2', format: 'woff2' },
+                ],
+              },
+            ],
+            fallbacks: ['Arial'],
+          }
         : undefined,
       selectFontsToPreload: (_family, fonts) => fonts,
     })
@@ -197,33 +278,63 @@ describe('transformCSS', () => {
     expect(exposed).toHaveLength(1)
     expect(exposed[0]![0]).toBe('/css/style.css')
     expect(exposed[0]![1]).toEqual(expect.arrayContaining([
-      { fontFamily: 'Poppins', resolved: true, fallbacks: ['Arial'], preloads: ['/poppins.woff2'] },
-      { fontFamily: 'Unknown', resolved: false, fallbacks: [], preloads: [] },
+      {
+        fontFamily: 'Poppins',
+        resolved: true,
+        fallbacks: ['Arial'],
+        preloads: ['/poppins.woff2'],
+      },
+      {
+        fontFamily: 'Unknown',
+        resolved: false,
+        fallbacks: [],
+        preloads: [],
+      },
     ]))
   })
 
   it('should expose a stylesheet that uses no families', async () => {
     const exposed: Array<[string, FontFamilyUsage[]]> = []
-    await transform(`body { color: red }`, { exposeUsage: (id, usages) => void exposed.push([id, usages]) })
+    await transform(`body { color: red }`, {
+      exposeUsage: (id, usages) => void exposed.push([id, usages]),
+    })
 
-    expect(exposed).toEqual([['/css/style.css', []]])
+    expect(exposed).toEqual([
+      ['/css/style.css', []],
+    ])
   })
 
   it('should expose no fallbacks for a usage when none could be generated', async () => {
     let exposed: FontFamilyUsage[] = []
     await transform(`:root { font-family: 'Unknown Font' }`, {
       exposeUsage: (_id, usages) => void (exposed = usages),
-      resolveFontFace: () => ({ fonts: [font], fallbacks: ['Arial'] }),
+      resolveFontFace: () => ({
+        fonts: [font],
+        fallbacks: ['Arial'],
+      }),
     })
 
-    expect(exposed).toEqual([{ fontFamily: 'Unknown Font', resolved: true, fallbacks: [], preloads: [] }])
+    expect(exposed).toEqual([
+      {
+        fontFamily: 'Unknown Font',
+        resolved: true,
+        fallbacks: [],
+        preloads: [],
+      },
+    ])
   })
 })
 
 describe('fallback unicode-range', () => {
-  const subsets = [['U+0000-00FF', 'U+0131'], ['U+0100-02BA'], ['U+0400-045F']]
+  const subsets = [
+    ['U+0000-00FF', 'U+0131'],
+    ['U+0100-02BA'],
+    ['U+0400-045F'],
+  ]
   const faces = ['normal', 'italic'].flatMap(style => subsets.map((unicodeRange, index) => ({
-    src: [{ url: `/eb-garamond-${style}-${index}.woff2`, format: 'woff2' }],
+    src: [
+      { url: `/eb-garamond-${style}-${index}.woff2`, format: 'woff2' },
+    ],
     style,
     unicodeRange,
   })))
@@ -236,7 +347,10 @@ describe('fallback unicode-range', () => {
   it('should limit fallback faces to the characters the primary faces cover', async () => {
     const result = await transform(code, {
       processCSSVariables: true,
-      resolveFontFace: () => ({ fonts: faces, fallbacks: ['Noto Serif TC', 'Georgia'] }),
+      resolveFontFace: () => ({
+        fonts: faces,
+        fallbacks: ['Noto Serif TC', 'Georgia'],
+      }),
     })
 
     const fallbacks = fallbackFaces(result)
@@ -253,7 +367,10 @@ describe('fallback unicode-range', () => {
     const result = await transform(code, {
       dev: false,
       processCSSVariables: true,
-      resolveFontFace: () => ({ fonts: faces, fallbacks: ['Noto Serif TC', 'Georgia'] }),
+      resolveFontFace: () => ({
+        fonts: faces,
+        fallbacks: ['Noto Serif TC', 'Georgia'],
+      }),
     })
 
     const fallbacks = fallbackFaces(result)
@@ -266,17 +383,33 @@ describe('fallback unicode-range', () => {
   it('should limit fallback faces when only fallbacks are emitted', async () => {
     const result = await transform(code, {
       processCSSVariables: true,
-      resolveFontFace: () => ({ fonts: faces, fallbacks: ['Georgia'], fallbacksOnly: true }),
+      resolveFontFace: () => ({
+        fonts: faces,
+        fallbacks: ['Georgia'],
+        fallbacksOnly: true,
+      }),
     })
 
     expect(result).not.toContain(`font-family: 'EB Garamond';`)
-    expect(fallbackFaces(result)).toEqual([expect.stringContaining('unicode-range: U+0000-02BA, U+0400-045F;')])
+    expect(fallbackFaces(result)).toEqual([
+      expect.stringContaining('unicode-range: U+0000-02BA, U+0400-045F;'),
+    ])
   })
 
   it('should not limit fallback faces when a primary face has no `unicode-range`', async () => {
     const result = await transform(code, {
       processCSSVariables: true,
-      resolveFontFace: () => ({ fonts: [...faces, { src: [{ url: '/eb-garamond.woff2', format: 'woff2' }] }], fallbacks: ['Georgia'] }),
+      resolveFontFace: () => ({
+        fonts: [
+          ...faces,
+          {
+            src: [
+              { url: '/eb-garamond.woff2', format: 'woff2' },
+            ],
+          },
+        ],
+        fallbacks: ['Georgia'],
+      }),
     })
 
     const fallbacks = fallbackFaces(result)
@@ -286,11 +419,15 @@ describe('fallback unicode-range', () => {
 
   it('should limit fallback faces to a family-level `unicodeRange`', async () => {
     const provider = () => Object.assign(
-      () => ({ resolveFont: () => ({ fonts: faces as FontFaceData[] }) }),
+      () => ({
+        resolveFont: () => ({ fonts: faces as FontFaceData[] }),
+      }),
       { _name: 'test', _options: {} },
     ) as unknown as Provider
     const resolver = await createResolver({
-      options: { providers: { test: provider } },
+      options: {
+        providers: { test: provider },
+      },
       providers: { test: provider },
       normalizeFontData: faces => faces as FontFaceData[],
     })
@@ -309,9 +446,24 @@ describe('fallback unicode-range', () => {
 })
 
 describe('variable font fallbacks', () => {
-  const variable = { weight: [100, 900] as [number, number], stretch: '62% 125%' }
-  const latin = { ...variable, src: [{ url: '/archivo-latin.woff2', format: 'woff2' }], unicodeRange: ['U+0000-00FF, U+0131'] }
-  const latinExt = { ...variable, src: [{ url: '/archivo-latin-ext.woff2', format: 'woff2' }], unicodeRange: ['U+0100-02BA'] }
+  const variable = {
+    weight: [100, 900] as [number, number],
+    stretch: '62% 125%',
+  }
+  const latin = {
+    ...variable,
+    src: [
+      { url: '/archivo-latin.woff2', format: 'woff2' },
+    ],
+    unicodeRange: ['U+0000-00FF, U+0131'],
+  }
+  const latinExt = {
+    ...variable,
+    src: [
+      { url: '/archivo-latin-ext.woff2', format: 'woff2' },
+    ],
+    unicodeRange: ['U+0100-02BA'],
+  }
   const code = `:root { font-family: 'Archivo', sans-serif }`
 
   function fallbackFaces(css: string) {
@@ -322,10 +474,19 @@ describe('variable font fallbacks', () => {
     const readVariationWidths = vi.fn(async () => [1, 1.5])
     const result = await transform(code, {
       readVariationWidths,
-      resolveFontFace: () => ({ fonts: [latin], fallbacks: ['Arial'], fallbackInstances: [{ weight: 700, stretch: '125%' }] }),
+      resolveFontFace: () => ({
+        fonts: [latin],
+        fallbacks: ['Arial'],
+        fallbackInstances: [
+          { weight: 700, stretch: '125%' },
+        ],
+      }),
     })
 
-    expect(readVariationWidths).toHaveBeenCalledExactlyOnceWith('/archivo-latin.woff2', [{ wght: 400, wdth: 100 }, { wght: 700, wdth: 125 }])
+    expect(readVariationWidths).toHaveBeenCalledExactlyOnceWith('/archivo-latin.woff2', [
+      { wght: 400, wdth: 100 },
+      { wght: 700, wdth: 125 },
+    ])
     expect(fallbackFaces(result)).toEqual([
       expect.not.stringContaining('font-weight'),
       expect.stringMatching(/local\("Arial Bold"\)[^}]*font-weight: 700;\s*font-stretch: 125%;/),
@@ -335,7 +496,13 @@ describe('variable font fallbacks', () => {
   it('should only emit fallback instances for fallbacks not already in scope', async () => {
     const result = await transform(`@font-face { font-family: "Archivo Fallback: Arial"; src: local("Arial") }\n${code}`, {
       readVariationWidths: async () => [1, 1.5],
-      resolveFontFace: () => ({ fonts: [latin], fallbacks: ['Arial', 'Times New Roman'], fallbackInstances: [{ weight: 800 }] }),
+      resolveFontFace: () => ({
+        fonts: [latin],
+        fallbacks: ['Arial', 'Times New Roman'],
+        fallbackInstances: [
+          { weight: 800 },
+        ],
+      }),
     })
 
     expect(fallbackFaces(result).filter(face => face.includes('Arial'))).toEqual(['@font-face { font-family: "Archivo Fallback: Arial"; src: local("Arial") }'])
@@ -347,18 +514,31 @@ describe('variable font fallbacks', () => {
   })
 
   it('should measure every face of a variable font from an upright one that covers Basic Latin', async () => {
-    const readVariationWidths = vi.fn(async (source: string) => [1, source === '/archivo-latin.woff2' ? 1.5 : 2])
+    const readVariationWidths = vi.fn(async (source: string) => [
+      1,
+      source === '/archivo-latin.woff2'
+        ? 1.5
+        : 2,
+    ])
     const result = await transform(code, {
       readVariationWidths,
       resolveFontFace: () => ({
         fonts: [
           { ...latinExt, style: 'italic' },
-          { ...latin, src: [{ url: '/archivo-latin-italic.woff2', format: 'woff2' }], style: 'italic' },
+          {
+            ...latin,
+            src: [
+              { url: '/archivo-latin-italic.woff2', format: 'woff2' },
+            ],
+            style: 'italic',
+          },
           { ...latinExt, style: 'normal' },
           latin,
         ],
         fallbacks: ['Arial'],
-        fallbackInstances: [{ weight: 800 }],
+        fallbackInstances: [
+          { weight: 800 },
+        ],
       }),
     })
 
@@ -367,13 +547,31 @@ describe('variable font fallbacks', () => {
   })
 
   it('should measure faces that declare different axis ranges separately', async () => {
-    const condensed = { ...latinExt, src: [{ url: '/archivo-condensed.woff2', format: 'woff2' }], stretch: '62% 100%' }
-    const light = { ...latinExt, src: [{ url: '/archivo-light.woff2', format: 'woff2' }], weight: [100, 800] as [number, number] }
+    const condensed = {
+      ...latinExt,
+      src: [
+        { url: '/archivo-condensed.woff2', format: 'woff2' },
+      ],
+      stretch: '62% 100%',
+    }
+    const light = {
+      ...latinExt,
+      src: [
+        { url: '/archivo-light.woff2', format: 'woff2' },
+      ],
+      weight: [100, 800] as [number, number],
+    }
     const widths: Record<string, number> = { '/archivo-latin.woff2': 1.5, '/archivo-condensed.woff2': 2, '/archivo-light.woff2': 2.5 }
     const readVariationWidths = vi.fn(async (source: string) => [1, widths[source]!])
     const result = await transform(code, {
       readVariationWidths,
-      resolveFontFace: () => ({ fonts: [condensed, light, latin], fallbacks: ['Arial'], fallbackInstances: [{ weight: 800 }] }),
+      resolveFontFace: () => ({
+        fonts: [condensed, light, latin],
+        fallbacks: ['Arial'],
+        fallbackInstances: [
+          { weight: 800 },
+        ],
+      }),
     })
 
     expect(new Set(readVariationWidths.mock.calls.map(([source]) => source))).toEqual(new Set(Object.keys(widths)))
@@ -392,10 +590,17 @@ describe('system font stacks', () => {
     `, {
       resolveFontFace: (family) => {
         resolved.push(family)
-        return { fonts: [font] }
+        return {
+          fonts: [font],
+        }
       },
     })
 
-    expect(resolved).toEqual(['SFMono-Regular', 'Apple Color Emoji', '-apple-system', 'Georgia'])
+    expect(resolved).toEqual([
+      'SFMono-Regular',
+      'Apple Color Emoji',
+      '-apple-system',
+      'Georgia',
+    ])
   })
 })

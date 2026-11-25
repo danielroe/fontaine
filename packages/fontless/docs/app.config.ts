@@ -23,11 +23,13 @@ export default defineAppConfig({
         dark: '/logo-dark.svg',
       },
       nav: [],
-      links: [{
-        icon: 'lucide:github',
-        to: 'https://github.com/unjs/fontaine/blob/main/packages/fontless',
-        target: '_blank',
-      }],
+      links: [
+        {
+          icon: 'lucide:github',
+          to: 'https://github.com/unjs/fontaine/blob/main/packages/fontless',
+          target: '_blank',
+        },
+      ],
     },
     aside: {
       useLevel: true,
@@ -39,25 +41,30 @@ export default defineAppConfig({
     },
     footer: {
       credits: 'Copyright © 2025',
-      links: [{
-        icon: 'lucide:github',
-        to: 'https://github.com/unjs/fontaine/blob/main/packages/fontless',
-        target: '_blank',
-      }],
+      links: [
+        {
+          icon: 'lucide:github',
+          to: 'https://github.com/unjs/fontaine/blob/main/packages/fontless',
+          target: '_blank',
+        },
+      ],
     },
     toc: {
       enable: false,
-      links: [{
-        title: 'Star on GitHub',
-        icon: 'lucide:star',
-        to: 'https://github.com/unjs/fontaine/blob/main/packages/fontless',
-        target: '_blank',
-      }, {
-        title: 'Create Issues',
-        icon: 'lucide:circle-dot',
-        to: 'https://github.com/unjs/fontaine/issues',
-        target: '_blank',
-      }],
+      links: [
+        {
+          title: 'Star on GitHub',
+          icon: 'lucide:star',
+          to: 'https://github.com/unjs/fontaine/blob/main/packages/fontless',
+          target: '_blank',
+        },
+        {
+          title: 'Create Issues',
+          icon: 'lucide:circle-dot',
+          to: 'https://github.com/unjs/fontaine/issues',
+          target: '_blank',
+        },
+      ],
     },
     search: {
       enable: false,

@@ -13,12 +13,22 @@ import { fontless } from '../src'
 
 vi.mock('fontaine', async (importOriginal) => {
   const fontaine = await importOriginal<typeof import('fontaine')>()
-  return { ...fontaine, readMetrics: vi.fn(fontaine.readMetrics), readVariationWidths: vi.fn(fontaine.readVariationWidths) }
+  return {
+    ...fontaine,
+    readMetrics: vi.fn(fontaine.readMetrics),
+    readVariationWidths: vi.fn(fontaine.readVariationWidths),
+  }
 })
 
 const scratchDirs: string[] = []
 const variableFont = new URL('../../fontaine/test/fixtures/archivo-variable.woff2', import.meta.url)
-const metrics = { ascent: 1000, descent: -250, lineGap: 0, unitsPerEm: 1000, xWidthAvg: 500 }
+const metrics = {
+  ascent: 1000,
+  descent: -250,
+  lineGap: 0,
+  unitsPerEm: 1000,
+  xWidthAvg: 500,
+}
 
 afterEach(() => {
   vi.mocked(readMetrics).mockRestore()
@@ -32,7 +42,16 @@ afterAll(async () => {
 function createStubProvider(url: string, weight: number | [number, number] = 400) {
   return Object.assign(
     (_ctx: ProviderContext) => ({
-      resolveFont: () => ({ fonts: [{ src: [{ url, format: 'woff2' }], weight }] }),
+      resolveFont: () => ({
+        fonts: [
+          {
+            src: [
+              { url, format: 'woff2' },
+            ],
+            weight,
+          },
+        ],
+      }),
     }),
     { _name: 'stub', _options: {} },
   ) as unknown as Provider
@@ -50,7 +69,16 @@ async function transformStyles(url: string, options: FontlessOptions = {}, proje
     configFile: false,
     logLevel: 'silent',
     ...project.config,
-    plugins: [fontless({ provider: 'stub', providers: { stub: () => createStubProvider(url, project.weight) }, cache: false, ...options })],
+    plugins: [
+      fontless({
+        provider: 'stub',
+        providers: {
+          stub: () => createStubProvider(url, project.weight),
+        },
+        cache: false,
+        ...options,
+      }),
+    ],
   })
 
   try {
@@ -83,7 +111,9 @@ describe('fallback metrics', () => {
   it('should read metrics of remote fonts from the cache', async () => {
     const url = 'https://cdn.example.com/switzer.woff2'
     const read = vi.mocked(readMetrics).mockResolvedValue(metrics)
-    const cache = createStorage({ driver: memoryDriver() })
+    const cache = createStorage({
+      driver: memoryDriver(),
+    })
 
     const first = await transformStyles(url, { cache })
     const second = await transformStyles(url, { cache })
@@ -99,7 +129,17 @@ describe('fallback metrics', () => {
 describe('variable font fallback metrics', () => {
   function archivo(src: string): FontlessOptions {
     return {
-      families: [{ name: 'Archivo', src, weight: [100, 900], stretch: '62% 125%', fallbackInstances: [{ weight: 700, stretch: '125%' }] }],
+      families: [
+        {
+          name: 'Archivo',
+          src,
+          weight: [100, 900],
+          stretch: '62% 125%',
+          fallbackInstances: [
+            { weight: 700, stretch: '125%' },
+          ],
+        },
+      ],
     }
   }
 
@@ -113,8 +153,19 @@ describe('variable font fallback metrics', () => {
 
   it('should generate the default fallback instances for a family that sets none', async () => {
     const code = await transformStyles('', {
-      defaults: { fallbackInstances: [{ weight: 700, stretch: '125%' }] },
-      families: [{ name: 'Archivo', src: '/fonts/archivo%20variable.woff2', weight: [100, 900], stretch: '62% 125%' }],
+      defaults: {
+        fallbackInstances: [
+          { weight: 700, stretch: '125%' },
+        ],
+      },
+      families: [
+        {
+          name: 'Archivo',
+          src: '/fonts/archivo%20variable.woff2',
+          weight: [100, 900],
+          stretch: '62% 125%',
+        },
+      ],
     }, { family: 'Archivo' })
 
     expect(code).toContain('size-adjust: 125.8173%')
@@ -124,7 +175,10 @@ describe('variable font fallback metrics', () => {
 
   it('should not measure a root-relative font that is not in the public directory', async () => {
     const missing = await transformStyles('', archivo('/fonts/missing.woff2'), { family: 'Archivo' })
-    const disabled = await transformStyles('', archivo('/fonts/archivo%20variable.woff2'), { family: 'Archivo', config: { publicDir: false } })
+    const disabled = await transformStyles('', archivo('/fonts/archivo%20variable.woff2'), {
+      family: 'Archivo',
+      config: { publicDir: false },
+    })
 
     for (const code of [missing, disabled]) {
       expect(code).toContain('Archivo Fallback: Arial')
@@ -136,26 +190,46 @@ describe('variable font fallback metrics', () => {
     const url = 'https://cdn.example.com/switzer-variable.woff2'
     vi.mocked(readMetrics).mockResolvedValue(metrics)
     const read = vi.mocked(readVariationWidths).mockResolvedValue([1, 1.2])
-    const cache = createStorage({ driver: memoryDriver() })
+    const cache = createStorage({
+      driver: memoryDriver(),
+    })
 
-    const first = await transformStyles(url, { cache }, { weight: [100, 900] })
-    const second = await transformStyles(url, { cache }, { weight: [100, 900] })
+    const first = await transformStyles(url, { cache }, {
+      weight: [100, 900],
+    })
+    const second = await transformStyles(url, { cache }, {
+      weight: [100, 900],
+    })
 
     for (const code of [first, second]) {
       expect(code).toContain('local(\\"Arial Bold\\")')
       expect(code).toContain('font-weight: 700')
     }
-    expect(read.mock.calls).toEqual([[url, [{ wght: 400, wdth: 100 }, { wght: 700, wdth: 100 }]]])
+    expect(read.mock.calls).toEqual([
+      [
+        url,
+        [
+          { wght: 400, wdth: 100 },
+          { wght: 700, wdth: 100 },
+        ],
+      ],
+    ])
   })
 
   it('should cache that a remote font has no variation widths', async () => {
     const url = 'https://cdn.example.com/switzer-static.woff2'
     vi.mocked(readMetrics).mockResolvedValue(metrics)
     const read = vi.mocked(readVariationWidths).mockResolvedValue(null)
-    const cache = createStorage({ driver: memoryDriver() })
+    const cache = createStorage({
+      driver: memoryDriver(),
+    })
 
-    const first = await transformStyles(url, { cache }, { weight: [100, 900] })
-    const second = await transformStyles(url, { cache }, { weight: [100, 900] })
+    const first = await transformStyles(url, { cache }, {
+      weight: [100, 900],
+    })
+    const second = await transformStyles(url, { cache }, {
+      weight: [100, 900],
+    })
 
     for (const code of [first, second]) {
       expect(code).toContain('Switzer Fallback: Arial')

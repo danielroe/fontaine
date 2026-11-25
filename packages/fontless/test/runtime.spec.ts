@@ -28,7 +28,9 @@ function entryPlugin({ css = true }: { css?: boolean } = {}): Plugin {
     load(id) {
       if (id === `\0${ENTRY_ID}`) {
         return [
-          css ? `import './src/style.css'` : '',
+          css
+            ? `import './src/style.css'`
+            : '',
           `import { preloads, globalFontFaces } from 'fontless/runtime'`,
           `export { preloads, globalFontFaces }`,
         ].filter(Boolean).join('\n')
@@ -38,10 +40,16 @@ function entryPlugin({ css = true }: { css?: boolean } = {}): Plugin {
 }
 
 function extractHrefs(chunk: string) {
-  return [...chunk.matchAll(/href:["'`]([^"'`]+\.woff2)/g)].map(([, href]) => href!)
+  return [
+    ...chunk.matchAll(/href:["'`]([^"'`]+\.woff2)/g),
+  ].map(([, href]) => href!)
 }
 
-const options: FontlessOptions = { families: [{ name: 'Poppins', preload: true }] }
+const options: FontlessOptions = {
+  families: [
+    { name: 'Poppins', preload: true },
+  ],
+}
 
 describe('`fontless/runtime` in build', () => {
   async function buildApp(config: Omit<InlineConfig, 'root' | 'configFile' | 'logLevel'> = {}, fontlessOptions: FontlessOptions = options) {
@@ -55,7 +63,10 @@ describe('`fontless/runtime` in build', () => {
       root,
       configFile: false,
       logLevel: 'silent',
-      plugins: [entryPlugin(), fontless(fontlessOptions)],
+      plugins: [
+        entryPlugin(),
+        fontless(fontlessOptions),
+      ],
       build: {
         ...config.build,
         outDir,
@@ -69,11 +80,20 @@ describe('`fontless/runtime` in build', () => {
 
     const files = await Array.fromAsync(fsp.glob('**/*', { cwd: outDir }))
     const chunk = await fsp.readFile(join(outDir, files.find(file => file.endsWith('.js'))!), 'utf-8')
-    return { files, chunk, warnings, hrefs: extractHrefs(chunk) }
+    return {
+      files,
+      chunk,
+      warnings,
+      hrefs: extractHrefs(chunk),
+    }
   }
 
   it('should warn when nothing is configured for preloading', { timeout: 20_000 }, async () => {
-    const { chunk, warnings } = await buildApp({}, { families: [{ name: 'Poppins' }] })
+    const { chunk, warnings } = await buildApp({}, {
+      families: [
+        { name: 'Poppins' },
+      ],
+    })
 
     expect(chunk).not.toContain('__FONTLESS_RUNTIME_BUILD_PLACEHOLDER__')
     expect(extractHrefs(chunk)).toEqual([])
@@ -101,8 +121,20 @@ describe('`fontless/runtime` in build', () => {
       root,
       configFile: false,
       logLevel: 'silent',
-      plugins: [entryPlugin(), fontless({ ...options, assets: { prefix: '/fonts' } })],
-      build: { outDir, emptyOutDir: true, rollupOptions: { input: { entry: ENTRY_ID } } },
+      plugins: [
+        entryPlugin(),
+        fontless({
+          ...options,
+          assets: { prefix: '/fonts' },
+        }),
+      ],
+      build: {
+        outDir,
+        emptyOutDir: true,
+        rollupOptions: {
+          input: { entry: ENTRY_ID },
+        },
+      },
     })
 
     const files = await Array.fromAsync(fsp.glob('**/*', { cwd: outDir }))
@@ -124,7 +156,10 @@ describe('`fontless/runtime` in dev', () => {
       configFile: false,
       logLevel: 'silent',
       server: { middlewareMode: true },
-      plugins: [entryPlugin(), fontless(options)],
+      plugins: [
+        entryPlugin(),
+        fontless(options),
+      ],
     })
 
     try {
@@ -146,7 +181,9 @@ describe('`fontless/runtime` in dev', () => {
 
 describe('`fontless/runtime` global font faces', () => {
   const globalOptions: FontlessOptions = {
-    families: [{ name: 'Black Fox', global: true, src: pathToFileURL(join(root, 'src/black-fox.ttf')).href }],
+    families: [
+      { name: 'Black Fox', global: true, src: pathToFileURL(join(root, 'src/black-fox.ttf')).href },
+    ],
   }
 
   it('should expose `@font-face` declarations for `global` families in build', { timeout: 20_000 }, async () => {
@@ -157,8 +194,17 @@ describe('`fontless/runtime` global font faces', () => {
       root,
       configFile: false,
       logLevel: 'silent',
-      plugins: [entryPlugin({ css: false }), fontless(globalOptions)],
-      build: { outDir, emptyOutDir: true, rollupOptions: { input: { entry: ENTRY_ID } } },
+      plugins: [
+        entryPlugin({ css: false }),
+        fontless(globalOptions),
+      ],
+      build: {
+        outDir,
+        emptyOutDir: true,
+        rollupOptions: {
+          input: { entry: ENTRY_ID },
+        },
+      },
     })
 
     const files = await Array.fromAsync(fsp.glob('**/*', { cwd: outDir }))
@@ -179,7 +225,10 @@ describe('`fontless/runtime` global font faces', () => {
       configFile: false,
       logLevel: 'silent',
       server: { middlewareMode: true },
-      plugins: [entryPlugin({ css: false }), fontless(globalOptions)],
+      plugins: [
+        entryPlugin({ css: false }),
+        fontless(globalOptions),
+      ],
     })
 
     try {

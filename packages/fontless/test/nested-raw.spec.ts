@@ -5,7 +5,10 @@ import { transformCSS } from '../src'
 
 vi.mock('css-tree', async (importOriginal) => {
   const original = await importOriginal<typeof import('css-tree')>()
-  return { ...original, parse: vi.fn(original.parse) }
+  return {
+    ...original,
+    parse: vi.fn(original.parse),
+  }
 })
 
 async function transform(css: string, processCSSVariables?: boolean | 'font-prefixed-only') {
@@ -14,7 +17,13 @@ async function transform(css: string, processCSSVariables?: boolean | 'font-pref
     processCSSVariables,
     fontsToPreload: new Map(),
     resolveFontFace: family => ({
-      fonts: [{ src: [{ url: `/${family.toLowerCase()}.woff2`, format: 'woff2' }] }],
+      fonts: [
+        {
+          src: [
+            { url: `/${family.toLowerCase()}.woff2`, format: 'woff2' },
+          ],
+        },
+      ],
     }),
   }, css, 'some-id')
   return result.toString()

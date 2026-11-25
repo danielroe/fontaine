@@ -52,19 +52,39 @@ const poppins: ProviderFontDetails = {
   type: 'auto',
   fontFamily: 'Poppins',
   provider: 'google',
-  fonts: [{ src: [{ name: 'Poppins' }, { url: '/_fonts/poppins.woff2', format: 'woff2' }], weight: 400, style: 'normal' }],
+  fonts: [
+    {
+      src: [
+        { name: 'Poppins' },
+        { url: '/_fonts/poppins.woff2', format: 'woff2' },
+      ],
+      weight: 400,
+      style: 'normal',
+    },
+  ],
 }
 
 const blackFox: ManualFontDetails = {
   type: 'manual',
   fontFamily: 'Black Fox',
-  fonts: [{ src: [{ url: '/black-fox.ttf', format: 'truetype' }] }],
+  fonts: [
+    {
+      src: [
+        { url: '/black-fox.ttf', format: 'truetype' },
+      ],
+    },
+  ],
 }
 // The metrics database fallbacks are rendered from is loaded on first use
 const FALLBACK_TIMEOUT = 10_000
 
 function poppinsUsage(fallbacks: string[] = ['Arial'], preloads: string[] = []): FontFamilyUsage {
-  return { fontFamily: 'Poppins', resolved: true, fallbacks, preloads }
+  return {
+    fontFamily: 'Poppins',
+    resolved: true,
+    fallbacks,
+    preloads,
+  }
 }
 
 describe('createFontlessDevframe', () => {
@@ -81,8 +101,18 @@ describe('createFontlessDevframe', () => {
   })
 
   it('should accept a custom id, name, icon and base path', () => {
-    const { definition } = createFontlessDevframe({ id: 'fonts', name: 'Typefaces', icon: 'ph:text-aa', basePath: '/__fonts/' })
-    expect(definition).toMatchObject({ id: 'fonts', name: 'Typefaces', icon: 'ph:text-aa', basePath: '/__fonts/' })
+    const { definition } = createFontlessDevframe({
+      id: 'fonts',
+      name: 'Typefaces',
+      icon: 'ph:text-aa',
+      basePath: '/__fonts/',
+    })
+    expect(definition).toMatchObject({
+      id: 'fonts',
+      name: 'Typefaces',
+      icon: 'ph:text-aa',
+      basePath: '/__fonts/',
+    })
   })
 
   it('should share the options the panel is presented with', async () => {
@@ -111,16 +141,18 @@ describe('createFontlessDevframe', () => {
       root: process.cwd(),
       reportsUsage: false,
       ui: {},
-      families: [{
-        ...poppins,
-        id: 0,
-        css: `@font-face {\n  font-family: 'Poppins';\n  src: local("Poppins"), url("/_fonts/poppins.woff2") format(woff2);\n  font-display: swap;\n  font-weight: 400;\n  font-style: normal;\n}\n`,
-        fallbackCSS: '',
-        fallbacks: [],
-        usages: [],
-        global: false,
-        preloads: [],
-      }],
+      families: [
+        {
+          ...poppins,
+          id: 0,
+          css: `@font-face {\n  font-family: 'Poppins';\n  src: local("Poppins"), url("/_fonts/poppins.woff2") format(woff2);\n  font-display: swap;\n  font-weight: 400;\n  font-style: normal;\n}\n`,
+          fallbackCSS: '',
+          fallbacks: [],
+          usages: [],
+          global: false,
+          preloads: [],
+        },
+      ],
       unresolved: [],
       warnings: [],
     })
@@ -140,7 +172,10 @@ describe('createFontlessDevframe', () => {
     devframe.exposeFont({ ...poppins, type: 'override' })
     const { getState } = await mount(devframe.definition)
 
-    expect((await getState()).families.map(({ id, type }) => ({ id, type }))).toEqual([{ id: 0, type: 'manual' }, { id: 1, type: 'override' }])
+    expect((await getState()).families.map(({ id, type }) => ({ id, type }))).toEqual([
+      { id: 0, type: 'manual' },
+      { id: 1, type: 'override' },
+    ])
   })
 
   it('should render `@font-face` declarations for the `local` provider', async () => {
@@ -148,7 +183,15 @@ describe('createFontlessDevframe', () => {
     devframe.exposeFont({
       ...poppins,
       provider: 'local',
-      fonts: [{ src: [{ url: '/fonts/Poppins-400-normal.woff', originalURL: 'file:///project/public/fonts/Poppins-400-normal.woff', format: 'woff' }], weight: 400, style: 'normal' }],
+      fonts: [
+        {
+          src: [
+            { url: '/fonts/Poppins-400-normal.woff', originalURL: 'file:///project/public/fonts/Poppins-400-normal.woff', format: 'woff' },
+          ],
+          weight: 400,
+          style: 'normal',
+        },
+      ],
     })
     const { getState } = await mount(devframe.definition)
 
@@ -172,15 +215,25 @@ describe('createFontlessDevframe', () => {
   it('should combine the usages of a family', async () => {
     const devframe = createFontlessDevframe()
     const { getState } = await mount(devframe.definition)
-    devframe.exposeUsage('/a.css', [poppinsUsage(['Arial'], ['/_fonts/poppins.woff2'])])
-    devframe.exposeUsage('/b.css', [poppinsUsage(['Arial', 'Helvetica Neue']), poppinsUsage(['Arial'])])
-    devframe.exposeUsage(undefined, [poppinsUsage([])])
+    devframe.exposeUsage('/a.css', [
+      poppinsUsage(['Arial'], ['/_fonts/poppins.woff2']),
+    ])
+    devframe.exposeUsage('/b.css', [
+      poppinsUsage(['Arial', 'Helvetica Neue']),
+      poppinsUsage(['Arial']),
+    ])
+    devframe.exposeUsage(undefined, [
+      poppinsUsage([]),
+    ])
     devframe.exposeFont(poppins)
 
     await vi.waitFor(async () => {
       const [family] = (await getState()).families
       expect(family).toMatchObject({
-        usages: [{ id: '/a.css', file: false }, { id: '/b.css', file: false }],
+        usages: [
+          { id: '/a.css', file: false },
+          { id: '/b.css', file: false },
+        ],
         global: true,
         fallbacks: ['Arial', 'Helvetica Neue'],
         preloads: ['/_fonts/poppins.woff2'],
@@ -193,11 +246,22 @@ describe('createFontlessDevframe', () => {
   it('should limit rendered fallbacks to the characters the family covers', async () => {
     const devframe = createFontlessDevframe()
     const { getState } = await mount(devframe.definition)
-    devframe.exposeFont({ ...poppins, fonts: [
-      { ...poppins.fonts[0]!, unicodeRange: ['U+0100-02BA'] },
-      { ...poppins.fonts[0]!, unicodeRange: ['U+0000-00FF'] },
-    ] })
-    devframe.exposeUsage('/a.css', [poppinsUsage()])
+    devframe.exposeFont({
+      ...poppins,
+      fonts: [
+        {
+          ...poppins.fonts[0]!,
+          unicodeRange: ['U+0100-02BA'],
+        },
+        {
+          ...poppins.fonts[0]!,
+          unicodeRange: ['U+0000-00FF'],
+        },
+      ],
+    })
+    devframe.exposeUsage('/a.css', [
+      poppinsUsage(),
+    ])
 
     await vi.waitFor(async () => {
       const { families } = await getState()
@@ -209,10 +273,30 @@ describe('createFontlessDevframe', () => {
   it('should render fallbacks from an upright face where there is one', async () => {
     const devframe = createFontlessDevframe()
     const { getState } = await mount(devframe.definition)
-    const italic = { ...poppins.fonts[0]!, style: 'italic', src: [{ url: 'file:///missing/italic.woff2' }] }
-    const upright = { ...poppins.fonts[0]!, src: [{ url: new URL('../examples/vanilla-app/src/black-fox.ttf', import.meta.url).href }] }
-    devframe.exposeFont({ ...poppins, fontFamily: 'Unknown', fonts: [italic, upright] })
-    devframe.exposeUsage('/a.css', [{ ...poppinsUsage(), fontFamily: 'Unknown' }])
+    const italic = {
+      ...poppins.fonts[0]!,
+      style: 'italic',
+      src: [
+        { url: 'file:///missing/italic.woff2' },
+      ],
+    }
+    const upright = {
+      ...poppins.fonts[0]!,
+      src: [
+        { url: new URL('../examples/vanilla-app/src/black-fox.ttf', import.meta.url).href },
+      ],
+    }
+    devframe.exposeFont({
+      ...poppins,
+      fontFamily: 'Unknown',
+      fonts: [italic, upright],
+    })
+    devframe.exposeUsage('/a.css', [
+      {
+        ...poppinsUsage(),
+        fontFamily: 'Unknown',
+      },
+    ])
 
     await vi.waitFor(async () => {
       const { families, warnings } = await getState()
@@ -224,22 +308,47 @@ describe('createFontlessDevframe', () => {
   it('should list fallbacks that could not be rendered as warnings', async () => {
     const devframe = createFontlessDevframe()
     const { getState } = await mount(devframe.definition)
-    devframe.exposeFont({ ...poppins, fontFamily: 'Unknown', fonts: [{ ...poppins.fonts[0]!, style: 'italic', src: [{ url: 'file:///missing/font.woff2' }] }] })
-    devframe.exposeUsage('/a.css', [{ ...poppinsUsage(), fontFamily: 'Unknown' }])
+    devframe.exposeFont({
+      ...poppins,
+      fontFamily: 'Unknown',
+      fonts: [
+        {
+          ...poppins.fonts[0]!,
+          style: 'italic',
+          src: [
+            { url: 'file:///missing/font.woff2' },
+          ],
+        },
+      ],
+    })
+    devframe.exposeUsage('/a.css', [
+      {
+        ...poppinsUsage(),
+        fontFamily: 'Unknown',
+      },
+    ])
 
     await vi.waitFor(async () => {
       const { families, warnings } = await getState()
       expect(families[0]!.fallbackCSS).toBe('')
-      expect(warnings).toEqual([expect.stringContaining('missing/font.woff2')])
+      expect(warnings).toEqual([
+        expect.stringContaining('missing/font.woff2'),
+      ])
     }, FALLBACK_TIMEOUT)
   })
 
   it('should not render fallbacks again for usages it has already rendered', async () => {
     const devframe = createFontlessDevframe()
     devframe.exposeFont(poppins)
-    devframe.exposeUsage('/a.css', [poppinsUsage(['Arial'])])
-    devframe.exposeUsage('/a.css', [poppinsUsage(['Helvetica Neue'])])
-    devframe.exposeUsage('/a.css', [poppinsUsage(['Helvetica Neue'])])
+    devframe.exposeUsage('/a.css', [
+      poppinsUsage(['Arial']),
+    ])
+    devframe.exposeUsage('/a.css', [
+      poppinsUsage(['Helvetica Neue']),
+    ])
+    devframe.exposeUsage('/a.css', [
+      poppinsUsage(['Helvetica Neue']),
+    ])
     const { getState } = await mount(devframe.definition)
 
     await vi.waitFor(async () => {
@@ -253,16 +362,43 @@ describe('createFontlessDevframe', () => {
     const devframe = createFontlessDevframe()
     const { getState } = await mount(devframe.definition)
     devframe.exposeUsage('/a.css', [
-      { fontFamily: 'Missing', resolved: false, fallbacks: [], preloads: [] },
-      { fontFamily: 'Helvetica', resolved: false, fallbacks: [], preloads: [] },
-      { ...poppinsUsage(), resolved: false },
+      {
+        fontFamily: 'Missing',
+        resolved: false,
+        fallbacks: [],
+        preloads: [],
+      },
+      {
+        fontFamily: 'Helvetica',
+        resolved: false,
+        fallbacks: [],
+        preloads: [],
+      },
+      {
+        ...poppinsUsage(),
+        resolved: false,
+      },
     ])
-    devframe.exposeUsage('/b.css', [poppinsUsage()])
+    devframe.exposeUsage('/b.css', [
+      poppinsUsage(),
+    ])
 
     await vi.waitFor(async () => {
       expect((await getState()).unresolved).toEqual([
-        { fontFamily: 'Missing', system: false, usages: [{ id: '/a.css', file: false }] },
-        { fontFamily: 'Helvetica', system: true, usages: [{ id: '/a.css', file: false }] },
+        {
+          fontFamily: 'Missing',
+          system: false,
+          usages: [
+            { id: '/a.css', file: false },
+          ],
+        },
+        {
+          fontFamily: 'Helvetica',
+          system: true,
+          usages: [
+            { id: '/a.css', file: false },
+          ],
+        },
       ])
     })
   })
@@ -271,10 +407,20 @@ describe('createFontlessDevframe', () => {
     const devframe = createFontlessDevframe()
     const { getState } = await mount(devframe.definition)
     devframe.exposeFont(poppins)
-    devframe.exposeUsage('/a.css', [poppinsUsage(), { fontFamily: 'Missing', resolved: false, fallbacks: [], preloads: [] }])
+    devframe.exposeUsage('/a.css', [
+      poppinsUsage(),
+      {
+        fontFamily: 'Missing',
+        resolved: false,
+        fallbacks: [],
+        preloads: [],
+      },
+    ])
     await vi.waitFor(async () => {
       const [family] = (await getState()).families
-      expect(family!.usages).toEqual([{ id: '/a.css', file: false }])
+      expect(family!.usages).toEqual([
+        { id: '/a.css', file: false },
+      ])
       expect(family!.fallbackCSS).toContain('Poppins Fallback: Arial')
     }, FALLBACK_TIMEOUT)
 
@@ -290,12 +436,24 @@ describe('createFontlessDevframe', () => {
     const devframe = createFontlessDevframe()
     const { getState } = await mount(devframe.definition)
     const file = fileURLToPath(import.meta.url)
-    devframe.exposeUsage('\0/__uno.css', [poppinsUsage()])
-    devframe.exposeUsage('\0/\uFFFD/__uno.css', [poppinsUsage()])
-    devframe.exposeUsage(`${file}?vue&type=style&index=0&lang.css`, [poppinsUsage()])
-    devframe.exposeUsage(`${file}?vue&type=style&index=0&inline&lang.css`, [poppinsUsage()])
-    devframe.exposeUsage('virtual:fonts.css', [poppinsUsage()])
-    devframe.exposeUsage('/__missing.css', [poppinsUsage()])
+    devframe.exposeUsage('\0/__uno.css', [
+      poppinsUsage(),
+    ])
+    devframe.exposeUsage('\0/\uFFFD/__uno.css', [
+      poppinsUsage(),
+    ])
+    devframe.exposeUsage(`${file}?vue&type=style&index=0&lang.css`, [
+      poppinsUsage(),
+    ])
+    devframe.exposeUsage(`${file}?vue&type=style&index=0&inline&lang.css`, [
+      poppinsUsage(),
+    ])
+    devframe.exposeUsage('virtual:fonts.css', [
+      poppinsUsage(),
+    ])
+    devframe.exposeUsage('/__missing.css', [
+      poppinsUsage(),
+    ])
     devframe.exposeFont(poppins)
 
     await vi.waitFor(async () => {
@@ -325,7 +483,18 @@ describe('createFontlessDevframe', () => {
 
 describe('fontless vite plugin devtools', () => {
   const stub = Object.assign(
-    () => ({ resolveFont: () => ({ fonts: [{ src: [{ url: '/font.woff2', format: 'woff2' }], weight: 400 }] }) }),
+    () => ({
+      resolveFont: () => ({
+        fonts: [
+          {
+            src: [
+              { url: '/font.woff2', format: 'woff2' },
+            ],
+            weight: 400,
+          },
+        ],
+      }),
+    }),
     { _name: 'stub', _options: {} },
   )
 
@@ -337,7 +506,15 @@ describe('fontless vite plugin devtools', () => {
       root,
       configFile: false,
       logLevel: 'silent',
-      plugins: [fontless({ provider: 'stub', providers: { stub: () => stub as never }, ...options })],
+      plugins: [
+        fontless({
+          provider: 'stub',
+          providers: {
+            stub: () => stub as never,
+          },
+          ...options,
+        }),
+      ],
     })
     cleanups.push(async () => {
       await server.close()
@@ -349,7 +526,9 @@ describe('fontless vite plugin devtools', () => {
 
   async function install(plugin: { devtools: { setup: (ctx: unknown) => Promise<void> } } | undefined) {
     const definitions: DevframeDefinition[] = []
-    const ctx = { install: async (definition: DevframeDefinition) => void definitions.push(definition) }
+    const ctx = {
+      install: async (definition: DevframeDefinition) => void definitions.push(definition),
+    }
     await plugin!.devtools.setup(ctx)
     await plugin!.devtools.setup(ctx)
     expect(definitions[0]).toBe(definitions[1])
@@ -368,8 +547,24 @@ describe('fontless vite plugin devtools', () => {
       const { families, reportsUsage } = await getState()
       expect(reportsUsage).toBe(true)
       expect(families.map(family => [family.fontFamily, family.usages])).toEqual([
-        ['Inter', [{ id: join(root, 'inter.css'), file: true }]],
-        ['Roboto', [{ id: join(root, 'roboto.css'), file: true }]],
+        [
+          'Inter',
+          [
+            {
+              id: join(root, 'inter.css'),
+              file: true,
+            },
+          ],
+        ],
+        [
+          'Roboto',
+          [
+            {
+              id: join(root, 'roboto.css'),
+              file: true,
+            },
+          ],
+        ],
       ])
     })
   })
@@ -392,7 +587,10 @@ describe('fontless vite plugin devtools', () => {
 
     await vi.waitFor(async () => {
       const state = await getState()
-      expect(state.families.find(family => family.fontFamily === 'Inter')).toMatchObject({ global: true, preloads: ['/font.woff2'] })
+      expect(state.families.find(family => family.fontFamily === 'Inter')).toMatchObject({
+        global: true,
+        preloads: ['/font.woff2'],
+      })
       expect(state.unresolved.map(family => family.fontFamily)).toEqual(['Roboto'])
       expect(state.warnings).toEqual(['Unknown provider `missing` for font family `Lato`. Falling back to default providers.'])
     })
@@ -405,7 +603,12 @@ describe('fontless vite plugin devtools', () => {
     await server.transformRequest('/inter.css')
     const { getState } = await install(plugin)
     await vi.waitFor(async () => {
-      expect((await getState()).families[0]!.usages).toEqual([{ id: join(root, 'inter.css'), file: true }])
+      expect((await getState()).families[0]!.usages).toEqual([
+        {
+          id: join(root, 'inter.css'),
+          file: true,
+        },
+      ])
     })
 
     await fsp.writeFile(join(root, 'inter.css'), `body { color: red }`)

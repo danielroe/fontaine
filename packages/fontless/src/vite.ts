@@ -105,7 +105,11 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
     const key = `${ctx.environment.name}:${file}`
     let ref = fontRefs.get(key)
     if (!ref) {
-      ref = ctx.emitFile({ type: 'asset', fileName: fontFileName(file), source })!
+      ref = ctx.emitFile({
+        type: 'asset',
+        fileName: fontFileName(file),
+        source,
+      })!
       fontRefs.set(key, ref)
     }
     return `__VITE_ASSET__${ref}__`
@@ -120,7 +124,12 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
       // A local file can change between builds without its emitted file name changing, so
       // its subset is keyed by its contents and by the versions of the subsetting toolchain.
       const subsetterVersion = getSubsetterVersion()
-      const key = subsetterVersion && `data:subsets:${hash('sha256', JSON.stringify([subsetterVersion, hash('sha256', font, 'base64url'), subset, variationAxes ?? null]), 'base64url')}`
+      const key = subsetterVersion && `data:subsets:${hash('sha256', JSON.stringify([
+        subsetterVersion,
+        hash('sha256', font, 'base64url'),
+        subset,
+        variationAxes ?? null,
+      ]), 'base64url')}`
       const cached = key && await storage.getItemRaw(key) as Buffer | null
       if (cached) {
         return cached
@@ -145,7 +154,9 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
       throw new Error(`Could not fetch font from \`${url}\` (${response.status} ${response.statusText}).`)
     }
     const downloaded = Buffer.from(await response.arrayBuffer())
-    const res = subset ? (await subsetFontData(downloaded, subset, url, variationAxes)).data : downloaded
+    const res = subset
+      ? (await subsetFontData(downloaded, subset, url, variationAxes)).data
+      : downloaded
     await storage.setItemRaw(key, res)
     return res
   }
@@ -168,7 +179,9 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
     if (!/^https?:\/\//.test(source)) {
       // A root-relative URL is served from the public directory, if a file exists there.
       const file = publicDir && source.startsWith('/') && join(publicDir, decodeURIComponent(source.replace(/[?#].*$/, '')))
-      return readVariationWidths(file && await access(file).then(() => true, () => false) ? pathToFileURL(file) : source, variations)
+      return readVariationWidths(file && await access(file).then(() => true, () => false)
+        ? pathToFileURL(file)
+        : source, variations)
     }
     const key = `data:metrics:${hash('sha256', JSON.stringify([source, variations]), 'base64url')}.json`
     const cached = await storage.getItem(key) as { widths: Awaited<ReturnType<typeof readVariationWidths>> } | null
@@ -193,12 +206,16 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
   function selectFontsToPreload(fontFamily: string, fonts: FontFaceData[]): FontFaceData[] {
     const override = getFamilyOverride(options.families, fontFamily)
     const preload = override?.preload ?? options.defaults?.preload
-    const subsets = (override && 'subsets' in override ? override.subsets : undefined) ?? options.defaults?.subsets
+    const subsets = (override && 'subsets' in override
+      ? override.subsets
+      : undefined) ?? options.defaults?.subsets
     return selectPreloadFonts(fontFamily, fonts, preload, subsets)
   }
 
   function getPreloadHrefs() {
-    return [...cssTransformOptions.fontsToPreload.values()].flatMap(v => [...v])
+    return [
+      ...cssTransformOptions.fontsToPreload.values(),
+    ].flatMap(v => [...v])
   }
 
   // Fonts referenced only by the global stylesheet, which is not attached to any module
@@ -226,7 +243,12 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
           () => resolveFontFaceWithOverride(family),
         )
         if (!result?.fonts?.length) {
-          globalUsages.push({ fontFamily: family, resolved: false, fallbacks: [], preloads: [] })
+          globalUsages.push({
+            fontFamily: family,
+            resolved: false,
+            fallbacks: [],
+            preloads: [],
+          })
           continue
         }
 
@@ -239,7 +261,12 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
             preloads.push(url)
           }
         }
-        globalUsages.push({ fontFamily: family, resolved: true, fallbacks: [], preloads })
+        globalUsages.push({
+          fontFamily: family,
+          resolved: true,
+          fallbacks: [],
+          preloads,
+        })
 
         // reverse order by priority since last rule with overlapping unicode-range wins
         // https://www.w3.org/TR/css-fonts-4/#composite-fonts
@@ -278,7 +305,10 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
 
     return Promise.all([...globalFontFiles].map(async (file): Promise<[string, string]> => {
       const font = assetContext.renderedFontURLs.get(file)!
-      return [publicFontURL(file), emitFont(ctx, file, await loadFont(file, font))]
+      return [
+        publicFontURL(file),
+        emitFont(ctx, file, await loadFont(file, font)),
+      ]
     }))
   }
 
@@ -325,7 +355,9 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
         // during dev, where every stylesheet is requested from its own path, so fall back
         // to the server root. During build the URL is resolved by Vite instead (see
         // `resolveAssetURL` below), which handles relative bases correctly.
-        baseURL: config.base.startsWith('/') || isFetchableURL(config.base) ? config.base : '/',
+        baseURL: config.base.startsWith('/') || isFetchableURL(config.base)
+          ? config.base
+          : '/',
         // During build, hand fonts to Vite's asset pipeline rather than writing literal
         // URLs, so `base`, a relative base and `experimental.renderBuiltUrl` all apply.
         resolveAssetURL: config.command === 'build'
@@ -340,7 +372,9 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
       // A resolved config always normalises `resolve.alias` to an array, which jiti cannot
       // consume; the object form is only reachable via a hand-built config object.
       /* v8 ignore next */
-      const alias = Array.isArray(config.resolve.alias) ? {} : config.resolve.alias
+      const alias = Array.isArray(config.resolve.alias)
+        ? {}
+        : config.resolve.alias
       const providers = await resolveProviders(options.providers, { root: config.root, alias })
 
       // Auto-inject readFile, exists, resolve and root for the npm provider
@@ -418,7 +452,9 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
           const data = await loadFont(filename, font)
           res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
           res.setHeader('Content-Length', data.byteLength)
-          res.end(req.method === 'HEAD' ? undefined : data)
+          res.end(req.method === 'HEAD'
+            ? undefined
+            : data)
         }
         catch (e) {
           next(e)
@@ -433,7 +469,9 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
         code: {
           // Early return if no font-family is used in this CSS, unless DevTools may be enabled,
           // where such stylesheets clear the families they previously used
-          exclude: !options.processCSSVariables && options.devtools === false ? [/^(?!.*font-family\s*:).*$/s] : undefined,
+          exclude: !options.processCSSVariables && options.devtools === false
+            ? [/^(?!.*font-family\s*:).*$/s]
+            : undefined,
         },
       },
       async handler(code, id) {
@@ -496,7 +534,11 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
         }))
 
         if (css) {
-          tags.push({ tag: 'style', attrs: { type: 'text/css' }, children: css } as never)
+          tags.push({
+            tag: 'style',
+            attrs: { type: 'text/css' },
+            children: css,
+          } as never)
         }
 
         return tags
@@ -512,7 +554,10 @@ export function fontless(_options?: FontlessOptions): Plugin[] {
     // `@font-face` blocks must be resolved before preloads are read, as global families
     // register their preloads as a side effect
     const globalFontFaces = await getGlobalFontFaces()
-    return { preloads: getRuntimePreloads(), globalFontFaces }
+    return {
+      preloads: getRuntimePreloads(),
+      globalFontFaces,
+    }
   }
 
   const RUNTIME_PLACEHOLDER = '__FONTLESS_RUNTIME_BUILD_PLACEHOLDER__'

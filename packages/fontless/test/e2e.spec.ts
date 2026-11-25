@@ -129,7 +129,9 @@ describe(`e2e ${RSC_FIXTURE}`, () => {
     const serverEntry = await readFile(join(outputDir, 'rsc/index.js'), 'utf-8')
     expect(serverEntry, 'unresolved asset placeholder in the server bundle').not.toContain('__VITE_ASSET__')
 
-    const preloads = [...serverEntry.matchAll(/"(\/assets\/_fonts\/[^"]+\.woff2)"/g)].map(([, href]) => href!)
+    const preloads = [
+      ...serverEntry.matchAll(/"(\/assets\/_fonts\/[^"]+\.woff2)"/g),
+    ].map(([, href]) => href!)
     expect(preloads.length, 'expected the rsc entry to render preload links').toBeGreaterThan(0)
 
     // Preload hrefs are resolved per environment, but the browser only ever fetches

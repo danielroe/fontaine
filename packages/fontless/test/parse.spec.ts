@@ -234,7 +234,10 @@ describe('parsing css', () => {
         extracted.push(extractFontFamilies(node))
       },
     })
-    expect(extracted).toEqual([['Foo'], ['Qux']])
+    expect(extracted).toEqual([
+      ['Foo'],
+      ['Qux'],
+    ])
   })
 
   it('should handle nested CSS', async () => {
@@ -280,8 +283,16 @@ describe('custom prefix for processCSSVariables', () => {
       processCSSVariables: prefix,
       fontsToPreload: new Map(),
       resolveFontFace: (family, options) => ({
-        fonts: [{ src: [{ url: `/${family.toLowerCase().replace(/\W/g, '-')}.woff2`, format: 'woff2' }] }],
-        fallbacks: options?.fallbacks ? ['Times New Roman', ...options.fallbacks] : undefined,
+        fonts: [
+          {
+            src: [
+              { url: `/${family.toLowerCase().replace(/\W/g, '-')}.woff2`, format: 'woff2' },
+            ],
+          },
+        ],
+        fallbacks: options?.fallbacks
+          ? ['Times New Roman', ...options.fallbacks]
+          : undefined,
       }),
     }, css, 'some-id')
     return result?.toString()
@@ -406,8 +417,16 @@ describe('lightningcss integration', () => {
       fontsToPreload: new Map(),
       lightningcssOptions: { minify: false },
       resolveFontFace: (family, options) => ({
-        fonts: [{ src: [{ url: `/${slugify(family)}.woff2`, format: 'woff2' }] }],
-        fallbacks: options?.fallbacks ? ['Times New Roman', ...options.fallbacks] : undefined,
+        fonts: [
+          {
+            src: [
+              { url: `/${slugify(family)}.woff2`, format: 'woff2' },
+            ],
+          },
+        ],
+        fallbacks: options?.fallbacks
+          ? ['Times New Roman', ...options.fallbacks]
+          : undefined,
       }),
     }, `:root { font-family: 'CustomFont' }`, 'some-id')
 
@@ -428,8 +447,16 @@ async function transform(css: string) {
     processCSSVariables: true,
     fontsToPreload: new Map(),
     resolveFontFace: (family, options) => ({
-      fonts: [{ src: [{ url: `/${slugify(family)}.woff2`, format: 'woff2' }] }],
-      fallbacks: options?.fallbacks ? ['Times New Roman', ...options.fallbacks] : undefined,
+      fonts: [
+        {
+          src: [
+            { url: `/${slugify(family)}.woff2`, format: 'woff2' },
+          ],
+        },
+      ],
+      fallbacks: options?.fallbacks
+        ? ['Times New Roman', ...options.fallbacks]
+        : undefined,
     }),
   }, css, 'some-id')
   return result?.toString()
@@ -442,8 +469,16 @@ async function transformLightningCSS(css: string) {
     fontsToPreload: new Map(),
     lightningcssOptions: { minify: true },
     resolveFontFace: (family, options) => ({
-      fonts: [{ src: [{ url: `/${slugify(family)}.woff2`, format: 'woff2' }] }],
-      fallbacks: options?.fallbacks ? ['Times New Roman', ...options.fallbacks] : undefined,
+      fonts: [
+        {
+          src: [
+            { url: `/${slugify(family)}.woff2`, format: 'woff2' },
+          ],
+        },
+      ],
+      fallbacks: options?.fallbacks
+        ? ['Times New Roman', ...options.fallbacks]
+        : undefined,
     }),
   }, css, 'some-id')
   return result?.toString()
@@ -454,27 +489,73 @@ describe('addLocalFallbacks', () => {
     addLocalFallbacks('Inter', data)[0]!.src.filter(src => 'name' in src).map(src => (src as { name: string }).name)
 
   it('should add a variable local font for a weight range', () => {
-    expect(localNames([{ weight: [400, 700], src: [{ url: '/inter.woff2' }] }])).toEqual(['Inter Variable'])
+    expect(localNames([
+      {
+        weight: [400, 700],
+        src: [
+          { url: '/inter.woff2' },
+        ],
+      },
+    ])).toEqual(['Inter Variable'])
   })
 
   it('should include the style in the variable local font name', () => {
-    expect(localNames([{ weight: [400, 700], style: 'italic', src: [{ url: '/inter.woff2' }] }]))
+    expect(localNames([
+      {
+        weight: [400, 700],
+        style: 'italic',
+        src: [
+          { url: '/inter.woff2' },
+        ],
+      },
+    ]))
       .toEqual(['Inter Variable Italic'])
   })
 
   it('should add a bare family name alongside the regular weight', () => {
-    expect(localNames([{ weight: 400, src: [{ url: '/inter.woff2' }] }])).toEqual(['Inter Regular', 'Inter'])
+    expect(localNames([
+      {
+        weight: 400,
+        src: [
+          { url: '/inter.woff2' },
+        ],
+      },
+    ])).toEqual(['Inter Regular', 'Inter'])
   })
 
   it('should not add a bare family name for other weights', () => {
-    expect(localNames([{ weight: 700, style: 'italic', src: [{ url: '/inter.woff2' }] }])).toEqual(['Inter Bold Italic'])
+    expect(localNames([
+      {
+        weight: 700,
+        style: 'italic',
+        src: [
+          { url: '/inter.woff2' },
+        ],
+      },
+    ])).toEqual(['Inter Bold Italic'])
   })
 
   it('should ignore unmapped weights and styles', () => {
-    expect(localNames([{ weight: 'bolder', style: 'unknown', src: [{ url: '/inter.woff2' }] }])).toEqual([])
+    expect(localNames([
+      {
+        weight: 'bolder',
+        style: 'unknown',
+        src: [
+          { url: '/inter.woff2' },
+        ],
+      },
+    ])).toEqual([])
   })
 
   it('should leave faces that already start with a local source untouched', () => {
-    expect(localNames([{ weight: 400, src: [{ name: 'Inter Var' }, { url: '/inter.woff2' }] }])).toEqual(['Inter Var'])
+    expect(localNames([
+      {
+        weight: 400,
+        src: [
+          { name: 'Inter Var' },
+          { url: '/inter.woff2' },
+        ],
+      },
+    ])).toEqual(['Inter Var'])
   })
 })

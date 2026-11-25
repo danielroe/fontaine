@@ -125,7 +125,9 @@ export function extractFontFamilies(node: Declaration): string[] {
   let buffer = ''
   for (const child of parseValue(node).children) {
     if (child.type === 'Identifier' && isFamilyName(child.name)) {
-      buffer = buffer ? `${buffer} ${child.name}` : child.name
+      buffer = buffer
+        ? `${buffer} ${child.name}`
+        : child.name
     }
     if (buffer && child.type === 'Operator' && child.value === ',') {
       families.push(buffer.replace(/\\/g, ''))
@@ -151,7 +153,9 @@ export function addLocalFallbacks(fontFamily: string, data: FontFaceData[]): Fon
     const style = (face.style ? styleMap[face.style] : '') ?? ''
 
     if (Array.isArray(face.weight)) {
-      face.src.unshift(({ name: ([fontFamily, 'Variable', style].join(' ')).trim() }))
+      face.src.unshift(({
+        name: ([fontFamily, 'Variable', style].join(' ')).trim(),
+      }))
     }
     else if (face.src[0] && !('name' in face.src[0])) {
       const weights = [face.weight]
@@ -160,9 +164,13 @@ export function addLocalFallbacks(fontFamily: string, data: FontFaceData[]): Fon
 
       for (const weight of weights) {
         if (weight === 'Regular') {
-          face.src.unshift({ name: ([fontFamily, style].join(' ')).trim() })
+          face.src.unshift({
+            name: ([fontFamily, style].join(' ')).trim(),
+          })
         }
-        face.src.unshift({ name: ([fontFamily, weight, style].join(' ')).trim() })
+        face.src.unshift({
+          name: ([fontFamily, weight, style].join(' ')).trim(),
+        })
       }
     }
   }

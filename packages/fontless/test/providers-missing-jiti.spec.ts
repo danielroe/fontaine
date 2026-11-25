@@ -8,7 +8,10 @@ vi.mock('jiti', () => {
 
 describe('resolveProviders without jiti', () => {
   it('should ask for jiti when a provider cannot be imported', async () => {
-    await expect(resolveProviders({ custom: './does-not-exist.ts' }, { root: tmpdir(), alias: {} }))
+    await expect(resolveProviders({ custom: './does-not-exist.ts' }, {
+      root: tmpdir(),
+      alias: {},
+    }))
       .rejects
       .toThrow(/install `jiti` to load it/)
   })
