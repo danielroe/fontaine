@@ -144,9 +144,17 @@ const BOLD_THRESHOLD = 600
 
 const NUMBER_RE = /\d+(?:\.\d+)?/g
 
-function parseRange(value: unknown): [min: number, max: number] | undefined {
-  const [min, max, ...rest] = String(value).match(NUMBER_RE)?.map(Number) || []
-  return max !== undefined && !rest.length && min! < max ? [min!, max] : undefined
+/** The values a descriptor covers, where an absent or `normal` descriptor covers its initial value. */
+function parseRange(value: unknown, initial: number): [min: number, max: number] | undefined {
+  if (value === undefined || value === 'normal') {
+    return [initial, initial]
+  }
+  const [min, max = min, ...rest] = String(value).match(NUMBER_RE)?.map(Number) || []
+  return min !== undefined && !rest.length && min <= max! ? [min, max!] : undefined
+}
+
+function isRange(range: [min: number, max: number] | undefined): boolean {
+  return !!range && range[0] < range[1]
 }
 
 function isWithin(value: number | undefined, range: [min: number, max: number] | undefined): boolean {
@@ -160,8 +168,11 @@ interface VariableFontInstance {
 }
 
 function selectFallbackInstances(data: NormalizedFontFaceData, instances: FallbackInstance[] = [{ weight: BOLD_WEIGHT }]): VariableFontInstance[] {
-  const weights = parseRange(data.weight)
-  const stretches = parseRange(data.stretch)
+  const weights = parseRange(data.weight, REGULAR_WEIGHT)
+  const stretches = parseRange(data.stretch, NORMAL_STRETCH)
+  if (!isRange(weights) && !isRange(stretches)) {
+    return []
+  }
   return instances
     .map(({ weight, stretch }) => ({ weight, stretch: stretch === undefined ? undefined : Number.parseFloat(stretch) }))
     .filter(({ weight, stretch }) => (weight ?? stretch) !== undefined && isWithin(weight, weights) && isWithin(stretch, stretches))
@@ -182,7 +193,7 @@ interface FallbackInstanceFace {
  * will scale describe the regular instance of the font, as opposed to its default one.
  */
 async function measureFallbackInstances(family: string, instances: VariableFontInstance[], source: string | undefined, knownBold: number | undefined, regular: boolean, read: NonNullable<FontFallbackOptions['readVariationWidths']>): Promise<FallbackInstanceFace[]> {
-  const measured = instances.filter(({ weight, stretch }) => !knownBold || weight !== BOLD_WEIGHT || stretch !== undefined)
+  const measured = instances.filter(({ weight, stretch }) => !knownBold || weight !== BOLD_WEIGHT || (stretch ?? NORMAL_STRETCH) !== NORMAL_STRETCH)
   const widths = measured.length && source
     ? await readFromSource(family, source, url => read(url, [
         { wght: REGULAR_WEIGHT, wdth: NORMAL_STRETCH },
