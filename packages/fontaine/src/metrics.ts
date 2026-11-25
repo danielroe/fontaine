@@ -270,10 +270,11 @@ export function readVariationWidths(_source: URL | string, variations: Array<Rec
   const key = JSON.stringify([url.href, variations])
   let widths = variationWidthCache.get(key)
   if (!widths) {
+    const requested = variations.map(variation => ({ ...variation }))
     const buffer = url.protocol === 'file:'
       ? readFile(fileURLToPath(url))
       : fetch(url).then(async response => Buffer.from(await response.arrayBuffer()))
-    widths = buffer.then(buffer => measureVariationWidths(buffer, variations)).catch((error) => {
+    widths = buffer.then(buffer => measureVariationWidths(buffer, requested)).catch((error) => {
       variationWidthCache.delete(key)
       throw error
     })

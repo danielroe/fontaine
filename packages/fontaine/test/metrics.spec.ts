@@ -158,6 +158,17 @@ describe('readVariationWidths', () => {
     expect(results[0]![0]).toBeCloseTo(1.2)
   })
 
+  it('should measure the variations as they were when read', async () => {
+    const source = new URL('./fixtures/archivo-variable.woff2?mutated', import.meta.url)
+    vi.mocked(create).mockReturnValue(fakeFont())
+    const variations = [{ wght: 400 }]
+    const widths = readVariationWidths(source, variations)
+    variations[0]!.wght = 900
+
+    expect(await widths).toEqual([1])
+    expect(await readVariationWidths(source, [{ wght: 400 }])).toEqual([1])
+  })
+
   it('should not cache a font that could not be parsed', async () => {
     const source = new URL('./fixtures/archivo-variable.woff2?unparsed', import.meta.url)
     vi.mocked(create).mockReturnValue(fakeFont()).mockImplementationOnce(() => {
