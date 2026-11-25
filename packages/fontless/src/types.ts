@@ -108,7 +108,7 @@ export interface FontFamilyOverrides {
    * **Experimental.** Provider support and the option shape may change.
    *
    * @example { CASL: [1], MONO: [{ min: 0, max: 1 }] }
-   * @see {@link https://github.com/unjs/unifont | unifont} for the axes each provider supports.
+   * @see {@link https://github.com/made-in-common/unifont | unifont} for the axes each provider supports.
    */
   variableAxis?: VariableAxisOptions
   /**

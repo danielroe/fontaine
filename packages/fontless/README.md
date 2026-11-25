@@ -10,9 +10,9 @@
 ## Features
 
 - 🚀 **Optimized font loading**: Automatically loads and configures fonts with proper fallbacks and preload links.
-- 🔤 **Multiple provider support**: Google Fonts, Bunny Fonts, FontShare, FontSource, and more using [unifont](https://github.com/unjs/unifont)
+- 🔤 **Multiple provider support**: Google Fonts, Bunny Fonts, FontShare, FontSource, and more using [unifont](https://github.com/made-in-common/unifont)
 - 📦 **Zero runtime overhead**: Pure CSS solution with no JavaScript required at runtime
-- 📏 **Metric-based fallbacks**: Reduces Cumulative Layout Shift (CLS) by using font metrics from [fontaine](https://github.com/unjs/fontaine)
+- 📏 **Metric-based fallbacks**: Reduces Cumulative Layout Shift (CLS) by using font metrics from [fontaine](https://github.com/made-in-common/fontaine)
 - 🔄 **CSS transformation**: Detects font-family usage in your CSS and injects optimized `@font-face` declarations
 - 🎯 **Framework agnostic**: Works with all modern frameworks (Vue, React, Solid, Svelte, Qwik, etc.)
 
@@ -138,7 +138,7 @@ Entries in `families` that share a `name` configure one family. Every entry with
 
 ### Category-Aware Fallbacks
 
-Fontless uses category-aware fallback presets shared with the [fontaine](https://github.com/unjs/fontaine) package. These presets provide optimized system fonts for different generic font families:
+Fontless uses category-aware fallback presets shared with the [fontaine](https://github.com/made-in-common/fontaine) package. These presets provide optimized system fonts for different generic font families:
 
 - **sans-serif**: `Segoe UI`, `Helvetica Neue`, `Arial`, `Noto Sans`, `Liberation Sans`
 - **serif**: `Times New Roman`, `Georgia`, `Noto Serif`, `Liberation Serif`
@@ -461,7 +461,7 @@ Published under [MIT License](./LICENCE).
 [npm-version-href]: https://npmjs.com/package/fontless
 [npm-downloads-src]: https://img.shields.io/npm/dm/fontless?style=flat-square
 [npm-downloads-href]: https://npm.chart.dev/fontless
-[github-actions-src]: https://img.shields.io/github/actions/workflow/status/unjs/fontaine/ci.yml?branch=main&style=flat-square
-[github-actions-href]: https://github.com/unjs/fontaine/actions/workflows/ci.yml
-[codecov-src]: https://img.shields.io/codecov/c/gh/unjs/fontaine/main?style=flat-square
-[codecov-href]: https://codecov.io/gh/unjs/fontaine
+[github-actions-src]: https://img.shields.io/github/actions/workflow/status/made-in-common/fontaine/ci.yml?branch=main&style=flat-square
+[github-actions-href]: https://github.com/made-in-common/fontaine/actions/workflows/ci.yml
+[codecov-src]: https://img.shields.io/codecov/c/gh/made-in-common/fontaine/main?style=flat-square
+[codecov-href]: https://codecov.io/gh/made-in-common/fontaine

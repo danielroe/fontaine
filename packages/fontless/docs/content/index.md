@@ -14,7 +14,7 @@ actions:
     to: /#usage
   - name: GitHub
     variant: outline
-    to: https://github.com/unjs/fontaine/tree/main/packages/fontless
+    to: https://github.com/made-in-common/fontaine/tree/main/packages/fontless
     leftIcon: 'lucide:github'
 ---
 

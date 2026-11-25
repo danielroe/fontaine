@@ -286,7 +286,7 @@ export function createFontlessDevframe(options: FontlessDevframeOptions = {}): F
     version,
     packageName: 'fontless',
     importMetaUrl: import.meta.url,
-    homepage: 'https://github.com/unjs/fontaine/tree/main/packages/fontless',
+    homepage: 'https://github.com/made-in-common/fontaine/tree/main/packages/fontless',
     description,
     icon: options.icon ?? 'carbon:text-font',
     basePath: options.basePath,
