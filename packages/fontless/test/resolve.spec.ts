@@ -637,6 +637,63 @@ describe('createResolver', () => {
       })
       expect(result?.fallbacks).toEqual(['Arial'])
     })
+
+    it('should skip emoji families declared in CSS when picking fallbacks', async () => {
+      const provider = createCategoryProvider(['sans-serif'])
+      const resolver = await createResolver({
+        options: {
+          providers: { test: provider },
+        },
+        providers: { test: provider },
+        normalizeFontData: defaultNormalizeFontData,
+      })
+
+      const result = await resolver('Test Font', undefined, {
+        fallbacks: [
+          'Apple Color Emoji',
+          'Segoe UI Emoji',
+          'Segoe UI Symbol',
+          'Noto Color Emoji',
+        ],
+        generic: 'ui-sans-serif',
+      })
+      expect(result?.fallbacks).toEqual(['Segoe UI Symbol', ...defaultValues.fallbacks['sans-serif']!])
+    })
+
+    it('should fall back to the category defaults when a stack only declares emoji families', async () => {
+      const provider = createCategoryProvider(['sans-serif'])
+      const resolver = await createResolver({
+        options: {
+          providers: { test: provider },
+        },
+        providers: { test: provider },
+        normalizeFontData: defaultNormalizeFontData,
+      })
+
+      const result = await resolver('Test Font', undefined, {
+        fallbacks: ['Apple Color Emoji', 'Noto Color Emoji'],
+        generic: 'ui-sans-serif',
+      })
+      expect(result?.fallbacks).toEqual(defaultValues.fallbacks['sans-serif'])
+    })
+
+    it('should keep emoji families that a family explicitly configures as fallbacks', async () => {
+      const provider = createCategoryProvider(['sans-serif'])
+      const resolver = await createResolver({
+        options: {
+          providers: { test: provider },
+        },
+        providers: { test: provider },
+        normalizeFontData: defaultNormalizeFontData,
+      })
+
+      const result = await resolver('Test Font', {
+        name: 'Test Font',
+        provider: 'test',
+        fallbacks: ['Apple Color Emoji'],
+      })
+      expect(result?.fallbacks).toEqual(['Apple Color Emoji'])
+    })
   })
 
   describe('fallback instances', () => {

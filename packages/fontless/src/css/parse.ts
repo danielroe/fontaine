@@ -75,6 +75,15 @@ export function isSystemFontFamily(fontFamily: string): boolean {
   return systemFontFamilies.has(fontFamily.toLowerCase())
 }
 
+/**
+ * Emoji families fill the em box and carry glyphs for the space and the digits, so sizing them
+ * to another font's metrics makes ordinary text render at their width. They cannot serve as
+ * metric fallbacks.
+ */
+export function isEmojiFontFamily(fontFamily: string): boolean {
+  return /emoji/i.test(fontFamily)
+}
+
 /* Global values */
 const globalCSSValues = new Set([
   'inherit',
