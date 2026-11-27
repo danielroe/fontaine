@@ -4,7 +4,7 @@ import type { FontFamilyManualOverride, FontFamilyProviderOverride, FontlessOpti
 
 import type { FontFaceResolution } from './utils'
 import { createUnifont } from 'unifont'
-import { addLocalFallbacks, isSystemFontFamily } from './css/parse'
+import { addLocalFallbacks, isEmojiFontFamily, isSystemFontFamily } from './css/parse'
 import { defaultValues } from './defaults'
 import { logger as defaultLogger } from './logger'
 import { normalizeAxisValues, normalizeGlyphs } from './subset'
@@ -286,6 +286,9 @@ export async function createResolver(context: ResolverContext): Promise<Resolver
    * Fallback families to generate metrics for. An explicit override is used as-is. Otherwise, the
    * concrete families declared after the font in CSS come first, followed by the defaults for the
    * generic family declared alongside it or, failing that, the category the provider reports.
+   *
+   * Emoji families are left out of the CSS-derived list: they carry glyphs for the space and the
+   * digits, so sizing them to another font's metrics makes ordinary text render at their width.
    */
   function resolveFallbacks(override: FontFamilyManualOverride | FontFamilyProviderOverride | undefined, fallbackOptions: { fallbacks: string[], generic?: GenericCSSFamily } | undefined, providerFallbacks?: string[]): string[] {
     const explicit = override && 'fallbacks' in override
@@ -296,10 +299,11 @@ export async function createResolver(context: ResolverContext): Promise<Resolver
     }
     const category = fallbackOptions?.generic ?? providerFallbacks?.find(fallback => fallback in normalizedDefaults.fallbacks) as GenericCSSFamily | undefined
     const defaults = normalizedDefaults.fallbacks[category || 'sans-serif']
-    if (fallbackOptions?.fallbacks.length) {
+    const concrete = fallbackOptions?.fallbacks.filter(fallback => !isEmojiFontFamily(fallback)) ?? []
+    if (concrete.length) {
       return [
         ...new Set([
-          ...fallbackOptions.fallbacks,
+          ...concrete,
           ...defaults,
         ]),
       ]

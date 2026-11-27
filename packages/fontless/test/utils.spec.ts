@@ -603,4 +603,45 @@ describe('system font stacks', () => {
       'Georgia',
     ])
   })
+
+  it('should not generate metric fallbacks for emoji families in the stack', async () => {
+    const provider = () => Object.assign(
+      () => ({
+        resolveFont: () => ({
+          fonts: [
+            {
+              src: [
+                { url: '/inter.woff2', format: 'woff2' },
+              ],
+            },
+          ],
+        }),
+      }),
+      { _name: 'test', _options: {} },
+    ) as unknown as Provider
+    const resolver = await createResolver({
+      options: {
+        providers: { test: provider },
+      },
+      providers: { test: provider },
+      normalizeFontData: faces => faces as FontFaceData[],
+    })
+
+    const result = await transform(
+      `.font-sans { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji' }`,
+      {
+        resolveFontFace: (family, fallbackOptions) => resolver(family, undefined, fallbackOptions),
+      },
+    )
+
+    const fallbackNames = [
+      ...result.matchAll(/font-family: "(Inter Fallback: [^"]+)"/g),
+    ].map(match => match[1])
+    expect(fallbackNames).not.toContainEqual(expect.stringMatching(/Emoji/))
+    expect(fallbackNames).toContain('Inter Fallback: Segoe UI Symbol')
+    expect(fallbackNames).toEqual(expect.arrayContaining([
+      'Inter Fallback: Segoe UI',
+      'Inter Fallback: Helvetica Neue',
+    ]))
+  })
 })
